@@ -1,32 +1,21 @@
-#[allow(dead_code)]
-#[derive(Debug)]
-pub enum RuspErrType {
-    EmptyInput,
-}
+use crate::types;
 
-#[allow(dead_code)]
-#[derive(Debug)]
-pub struct RuspErr {
-    type_: RuspErrType,
-    reason: String,
-}
-
-fn read(x: String) -> Result<String, RuspErr> {
+fn read(x: String) -> Result<String, types::RuspErr> {
     Ok(x)
 }
 
-fn eval(x: String) -> Result<String, RuspErr> {
+fn eval(x: String) -> Result<String, types::RuspErr> {
     Ok(x)
 }
 
-fn print(x: String) -> Result<String, RuspErr> {
+fn print(x: String) -> Result<String, types::RuspErr> {
     Ok(x)
 }
 
-pub fn rep(x: String) -> Result<String, RuspErr> {
+pub fn rep(x: String) -> Result<String, types::RuspErr> {
     if x.is_empty() {
-        return Err(RuspErr {
-            type_: RuspErrType::EmptyInput,
+        return Err(types::RuspErr {
+            type_: types::RuspErrType::EmptyInput,
             reason: "Empty input".to_string(),
         });
     }
