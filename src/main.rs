@@ -2,11 +2,11 @@ extern crate getopts;
 
 fn repl() -> Result<(), rustyline::error::ReadlineError> {
     let mut rl = rustyline::Editor::<()>::new()?;
-    let history_file_path = "~/.risp_history";
+    let history_file_path = "~/.rusp_history";
     _ = rl.load_history(history_file_path);
 
     loop {
-        let line = rl.readline("risp> ");
+        let line = rl.readline("rusp> ");
         match line {
             Ok(line) => {
                 rl.add_history_entry(line.as_str());

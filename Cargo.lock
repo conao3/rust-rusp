@@ -222,7 +222,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rust-risp"
+name = "rusp"
 version = "0.1.0"
 dependencies = [
  "getopts",
