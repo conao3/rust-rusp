@@ -35,8 +35,6 @@ fn print_usage(program: &str, opts: getopts::Options) {
 }
 
 fn main() {
-    println!("Hello, world!");
-
     let args: Vec<String> = std::env::args().collect();
     let program = args[0].clone();
 
