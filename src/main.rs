@@ -13,7 +13,7 @@ fn repl() -> Result<(), rustyline::error::ReadlineError> {
         match line {
             Ok(line) => {
                 rl.add_history_entry(line.as_str());
-                let res = core::rep(line);
+                let res = core::rep(&line);
 
                 match res {
                     Ok(res) => println!("{}", res),
