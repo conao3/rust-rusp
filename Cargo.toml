@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 getopts = "0.2.21"
+rustyline = "10.0.0"
