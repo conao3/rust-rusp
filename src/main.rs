@@ -1,5 +1,7 @@
 extern crate getopts;
 
+mod core;
+
 fn repl() -> Result<(), rustyline::error::ReadlineError> {
     let mut rl = rustyline::Editor::<()>::new()?;
     let history_file_path = "~/.rusp_history";
@@ -10,7 +12,12 @@ fn repl() -> Result<(), rustyline::error::ReadlineError> {
         match line {
             Ok(line) => {
                 rl.add_history_entry(line.as_str());
-                println!("Line: {}", line);
+                let res = core::rep(line);
+
+                match res {
+                    Ok(res) => println!("{}", res),
+                    Err(e) => println!("Error: {:?}", e),
+                }
             }
             Err(rustyline::error::ReadlineError::Interrupted) => {
                 println!("CTRL-C");
