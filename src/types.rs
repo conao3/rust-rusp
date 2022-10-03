@@ -1,12 +1,20 @@
-#[allow(dead_code)]
-#[derive(Debug)]
-pub enum RuspErrType {
-    EmptyInput,
+#[derive(Debug, Eq, PartialEq)]
+pub enum RuspErr {
+    ReaderError,
+    ReaderEofError,
+    ReaderInternalError(String),
 }
 
-#[allow(dead_code)]
-#[derive(Debug)]
-pub struct RuspErr {
-    pub type_: RuspErrType,
-    pub reason: String,
+#[derive(Debug, PartialEq)]
+pub enum RuspAtom {
+    Int(i64),
+    Float(f64),
+    String(String),
+    Symbol(String),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum RuspExp {
+    Atom(RuspAtom),
+    Cons(RuspAtom, RuspAtom),
 }

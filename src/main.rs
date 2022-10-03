@@ -1,7 +1,4 @@
-extern crate getopts;
-
-mod core;
-mod types;
+use rusp::core;
 
 fn repl() -> Result<(), rustyline::error::ReadlineError> {
     let mut rl = rustyline::Editor::<()>::new()?;

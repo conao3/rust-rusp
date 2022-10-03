@@ -14,11 +14,8 @@ fn print(x: &str) -> Result<&str, types::RuspErr> {
 
 pub fn rep(x: &str) -> Result<&str, types::RuspErr> {
     if x.is_empty() {
-        return Err(types::RuspErr {
-            type_: types::RuspErrType::EmptyInput,
-            reason: "Empty input".to_string(),
-        });
+        return Err(types::RuspErr::ReaderEofError);
     }
 
-    Ok(print(eval(read(x)?)?)?)
+    print(eval(read(x)?)?)
 }
