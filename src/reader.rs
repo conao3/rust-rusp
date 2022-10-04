@@ -34,15 +34,15 @@ impl Reader<'_> {
     }
 
     fn read_atom(&mut self) -> anyhow::Result<types::RuspExp> {
-        let int_pattern = regex::Regex::new(r"^[0-9]+").unwrap();
-        let float_pattern = regex::Regex::new(r"^[0-9]*\.[0-9]+").unwrap();
+        let int_pattern = regex::Regex::new(r"^([+-]?[0-9]+)(?:[ ();]|$)").unwrap();
+        let float_pattern = regex::Regex::new(r"^([+-]?[0-9]*\.[0-9]+)(?:[ ();]|$)").unwrap();
 
-        if let Some(re) = float_pattern.find(self.input) {
-            return self.read_float(re.end());
+        if let Some(m) = float_pattern.captures(self.input) {
+            return self.read_float(m[0].len());
         }
 
-        if let Some(re) = int_pattern.find(self.input) {
-            return self.read_int(re.end());
+        if let Some(m) = int_pattern.captures(self.input) {
+            return self.read_int(m[0].len());
         }
 
         Ok(types::RuspExp::Atom(types::RuspAtom::Symbol(
@@ -99,5 +99,10 @@ mod tests {
         let mut reader = Reader::new(input);
         let exp = reader.read().unwrap();
         assert_eq!(exp, Atom(Symbol('a'.to_string())));
+
+        let input = "1+";
+        let mut reader = Reader::new(input);
+        let exp = reader.read().unwrap();
+        assert_eq!(exp, Atom(Symbol("1+".to_string())));
     }
 }
