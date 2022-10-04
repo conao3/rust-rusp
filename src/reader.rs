@@ -87,5 +87,15 @@ mod tests {
         let mut reader = Reader::new(input);
         let exp = reader.read().unwrap();
         assert_eq!(exp, Atom(Float(42.3)));
+
+        let input = "a";
+        let mut reader = Reader::new(input);
+        let exp = reader.read().unwrap();
+        assert_eq!(exp, Atom(Symbol('a'.to_string())));
+
+        let input = "   a";
+        let mut reader = Reader::new(input);
+        let exp = reader.read().unwrap();
+        assert_eq!(exp, Atom(Symbol('a'.to_string())));
     }
 }
