@@ -19,5 +19,8 @@ pub enum RuspAtom {
 #[derive(Debug, PartialEq)]
 pub enum RuspExp {
     Atom(RuspAtom),
-    Cons(RuspAtom, RuspAtom),
+    Cons {
+        car: Box<RuspExp>,
+        cdr: Box<RuspExp>,
+    },
 }
