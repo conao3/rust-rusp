@@ -1,21 +1,19 @@
 use crate::types;
 
-fn read(x: &str) -> Result<&str, types::RuspErr> {
+fn read(x: &str) -> anyhow::Result<&str> {
     Ok(x)
 }
 
-fn eval(x: &str) -> Result<&str, types::RuspErr> {
+fn eval(x: &str) -> anyhow::Result<&str> {
     Ok(x)
 }
 
-fn print(x: &str) -> Result<&str, types::RuspErr> {
+fn print(x: &str) -> anyhow::Result<&str> {
     Ok(x)
 }
 
-pub fn rep(x: &str) -> Result<&str, types::RuspErr> {
-    if x.is_empty() {
-        return Err(types::RuspErr::ReaderEofError);
-    }
+pub fn rep(x: &str) -> anyhow::Result<&str> {
+    anyhow::ensure!(!x.is_empty(), types::RuspErr::ReaderEofError);
 
     print(eval(read(x)?)?)
 }

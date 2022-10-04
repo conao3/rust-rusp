@@ -234,6 +234,7 @@ dependencies = [
  "anyhow",
  "getopts",
  "rustyline",
+ "thiserror",
 ]
 
 [[package]]

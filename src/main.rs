@@ -1,6 +1,7 @@
+use anyhow::Context;
 use rusp::core;
 
-fn repl() -> Result<(), rustyline::error::ReadlineError> {
+fn repl() -> anyhow::Result<()> {
     let mut rl = rustyline::Editor::<()>::new()?;
     let history_file_path = "~/.rusp_history";
     _ = rl.load_history(history_file_path);
@@ -32,6 +33,8 @@ fn repl() -> Result<(), rustyline::error::ReadlineError> {
         };
     }
     rl.save_history(history_file_path)
+        .with_context(|| format!("Failed save history file: {}", history_file_path))?;
+    Ok(())
 }
 
 fn print_usage(program: &str, opts: getopts::Options) {
@@ -39,7 +42,7 @@ fn print_usage(program: &str, opts: getopts::Options) {
     print!("{}", opts.usage(&brief));
 }
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     let args: Vec<String> = std::env::args().collect();
     let program = args[0].clone();
 
@@ -55,8 +58,8 @@ fn main() {
 
     if matches.opt_present("h") {
         print_usage(&program, opts);
-        return;
+        return Ok(());
     }
 
-    _ = repl();
+    repl()
 }

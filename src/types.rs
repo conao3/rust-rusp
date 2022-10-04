@@ -1,8 +1,11 @@
-#[derive(Debug, Eq, PartialEq)]
+#[derive(thiserror::Error, Debug, Eq, PartialEq)]
 pub enum RuspErr {
+    #[error("ReaderError")]
     ReaderError,
+    #[error("ReaderEofError")]
     ReaderEofError,
-    ReaderInternalError(String),
+    #[error("ReaderInternalError")]
+    ReaderInternalError,
 }
 
 #[derive(Debug, PartialEq)]
