@@ -75,6 +75,11 @@ mod tests {
         let exp = reader.read().unwrap_err();
         assert_eq!(exp.to_string(), RuspErr::ReaderEofError.to_string());
 
+        let input = "   ";
+        let mut reader = Reader::new(input);
+        let exp = reader.read().unwrap_err();
+        assert_eq!(exp.to_string(), RuspErr::ReaderEofError.to_string());
+
         let input = "42";
         let mut reader = Reader::new(input);
         let exp = reader.read().unwrap();
