@@ -11,7 +11,11 @@ impl Reader<'_> {
         Reader { input }
     }
 
-    pub fn read_atom(&self) -> anyhow::Result<types::RuspExp> {
+    fn skip_whitespace(&mut self) {
+        self.input = self.input.trim_start();
+    }
+
+    pub fn read_atom(&mut self) -> anyhow::Result<types::RuspExp> {
         let c = self
             .input
             .chars()
@@ -45,7 +49,8 @@ impl Reader<'_> {
         }
     }
 
-    pub fn read(&self) -> anyhow::Result<types::RuspExp> {
+    pub fn read(&mut self) -> anyhow::Result<types::RuspExp> {
+        self.skip_whitespace();
         self.read_atom()
     }
 }
@@ -60,18 +65,23 @@ mod tests {
     #[test]
     fn test_read_atom() {
         let input = "";
-        let readner = Reader::new(input);
-        let exp = readner.read().unwrap_err();
+        let mut reader = Reader::new(input);
+        let exp = reader.read().unwrap_err();
         assert_eq!(exp.to_string(), RuspErr::ReaderEofError.to_string());
 
         let input = "42";
-        let readner = Reader::new(input);
-        let exp = readner.read().unwrap();
+        let mut reader = Reader::new(input);
+        let exp = reader.read().unwrap();
         assert_eq!(exp, Atom(Int(42)));
 
         let input = "42.3";
-        let readner = Reader::new(input);
-        let exp = readner.read().unwrap();
+        let mut reader = Reader::new(input);
+        let exp = reader.read().unwrap();
+        assert_eq!(exp, Atom(Float(42.3)));
+
+        let input = "   42.3";
+        let mut reader = Reader::new(input);
+        let exp = reader.read().unwrap();
         assert_eq!(exp, Atom(Float(42.3)));
     }
 }
