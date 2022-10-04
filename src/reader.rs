@@ -15,7 +15,7 @@ impl Reader<'_> {
         self.input = self.input.trim_start();
     }
 
-    pub fn read_atom(&mut self) -> anyhow::Result<types::RuspExp> {
+    fn read_atom(&mut self) -> anyhow::Result<types::RuspExp> {
         let c = self
             .input
             .chars()
