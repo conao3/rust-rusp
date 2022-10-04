@@ -15,46 +15,48 @@ impl Reader<'_> {
         self.input = self.input.trim_start();
     }
 
-    fn read_number(&mut self) -> anyhow::Result<types::RuspExp> {
-        let mut inx = 0;
-        let mut is_float = false;
-
-        for c in self.input.chars() {
-            if c == '.' {
-                is_float = true;
-            }
-            inx += 1;
-        }
-
-        if is_float {
-            let f = self.input[..inx]
-                .parse::<f64>()
-                .with_context(|| "Failed to parse float")?;
-            return Ok(types::RuspExp::Atom(types::RuspAtom::Float(f)));
-        }
-
-        let i = self.input[..inx]
+    fn read_int(&mut self, end: usize) -> anyhow::Result<types::RuspExp> {
+        let i = self.input[..end]
             .parse::<i64>()
             .with_context(|| "Failed to parse int")?;
+        self.input = &self.input[end..];
+
         Ok(types::RuspExp::Atom(types::RuspAtom::Int(i)))
     }
 
+    fn read_float(&mut self, end: usize) -> anyhow::Result<types::RuspExp> {
+        let f = self.input[..end]
+            .parse::<f64>()
+            .with_context(|| "Failed to parse float")?;
+        self.input = &self.input[end..];
+
+        Ok(types::RuspExp::Atom(types::RuspAtom::Float(f)))
+    }
+
     fn read_atom(&mut self) -> anyhow::Result<types::RuspExp> {
+        let int_pattern = regex::Regex::new(r"^[0-9]+").unwrap();
+        let float_pattern = regex::Regex::new(r"^[0-9]*\.[0-9]+").unwrap();
+
+        if let Some(re) = float_pattern.find(self.input) {
+            return self.read_float(re.end());
+        }
+
+        if let Some(re) = int_pattern.find(self.input) {
+            return self.read_int(re.end());
+        }
+
+        Ok(types::RuspExp::Atom(types::RuspAtom::Symbol(
+            self.input.to_string(),
+        )))
+    }
+
+    pub fn read(&mut self) -> anyhow::Result<types::RuspExp> {
+        self.skip_whitespace();
         let c = self
             .input
             .chars()
             .next()
             .ok_or(types::RuspErr::ReaderEofError)?;
-        match c {
-            '0'..='9' => self.read_number(),
-            _ => Ok(types::RuspExp::Atom(types::RuspAtom::Symbol(
-                self.input.to_string(),
-            ))),
-        }
-    }
-
-    pub fn read(&mut self) -> anyhow::Result<types::RuspExp> {
-        self.skip_whitespace();
         self.read_atom()
     }
 }
