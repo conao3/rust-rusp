@@ -42,7 +42,7 @@ impl Reader<'_> {
             return Ok(types::RuspExp::Atom(types::RuspAtom::Symbol(s.to_string())));
         }
 
-        anyhow::bail!("Failed to parse") // unreachable
+        unreachable!()
     }
 
     fn read_cons(&mut self) -> anyhow::Result<types::RuspExp> {
