@@ -14,8 +14,9 @@ fn print(x: types::RuspExp) -> anyhow::Result<String> {
     Ok(x.to_string())
 }
 
-pub fn rep(x: &str) -> anyhow::Result<String> {
-    anyhow::ensure!(!x.is_empty(), types::RuspErr::ReaderEofError);
+pub fn rep(mut x: &str) -> anyhow::Result<String> {
+    x = x.trim_start(); // simple skip whitespace
+    anyhow::ensure!(!x.is_empty(), types::RuspErr::ReplEmptyError);
 
     print(eval(read(x)?)?)
 }

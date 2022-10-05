@@ -20,7 +20,10 @@ fn repl() -> anyhow::Result<()> {
 
                 match res {
                     Ok(res) => println!("{}", res),
-                    Err(e) => println!("Error: {:?}", e),
+                    Err(e) => match e.downcast_ref::<rusp::types::RuspErr>() {
+                        Some(rusp::types::RuspErr::ReplEmptyError) => (),
+                        _ => eprintln!("{}", e),
+                    },
                 }
             }
             Err(rustyline::error::ReadlineError::Interrupted) => {
