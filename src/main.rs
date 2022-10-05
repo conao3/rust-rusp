@@ -3,8 +3,11 @@ use rusp::core;
 
 fn repl() -> anyhow::Result<()> {
     let mut rl = rustyline::Editor::<()>::new()?;
-    let xdg_dirs = xdg::BaseDirectories::with_prefix("rusp").context("Failed to get XDG directories")?;
-    let history_file = xdg_dirs.place_config_file("history.txt").context("Failed to get history file path")?;
+    let xdg_dirs =
+        xdg::BaseDirectories::with_prefix("rusp").context("Failed to get XDG directories")?;
+    let history_file = xdg_dirs
+        .place_config_file("history.txt")
+        .context("Failed to get history file path")?;
     let history_file_path = history_file.as_path();
     _ = rl.load_history(history_file_path);
 
@@ -34,8 +37,12 @@ fn repl() -> anyhow::Result<()> {
             }
         };
     }
-    rl.save_history(history_file_path)
-        .with_context(|| format!("Failed save history file: {}", history_file_path.to_str().unwrap()))?;
+    rl.save_history(history_file_path).with_context(|| {
+        format!(
+            "Failed save history file: {}",
+            history_file_path.to_str().unwrap()
+        )
+    })?;
     Ok(())
 }
 

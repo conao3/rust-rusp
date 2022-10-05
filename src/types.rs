@@ -46,7 +46,11 @@ impl std::fmt::Display for RuspExp {
                 let mut cell = cdr;
 
                 lst.push(car.to_string());
-                while let RuspExp::Cons { car: cell_car, cdr: cell_cdr } = &**cell {
+                while let RuspExp::Cons {
+                    car: cell_car,
+                    cdr: cell_cdr,
+                } = &**cell
+                {
                     lst.push(cell_car.to_string());
                     cell = cell_cdr;
                 }
