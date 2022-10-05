@@ -8,23 +8,33 @@ pub enum RuspErr {
     ReaderEofError,
     #[error("ReaderInternalError")]
     ReaderInternalError,
+
+    #[error("WrongTypeArgument")]
+    WrongTypeArgument,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum RuspAtom {
     Int(i64),
     Float(f64),
     String(String),
     Symbol(String),
+    Func(fn(RuspExp) -> anyhow::Result<RuspExp>),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum RuspExp {
     Atom(RuspAtom),
     Cons {
         car: Box<RuspExp>,
         cdr: Box<RuspExp>,
     },
+}
+
+#[derive(Debug, PartialEq, Default)]
+pub struct RuspEnv {
+    pub value: std::collections::HashMap<String, RuspExp>,
+    pub function: std::collections::HashMap<String, RuspExp>,
 }
 
 impl std::fmt::Display for RuspAtom {
@@ -34,6 +44,7 @@ impl std::fmt::Display for RuspAtom {
             RuspAtom::Float(i) => i.to_string(),
             RuspAtom::String(s) => s.to_string(),
             RuspAtom::Symbol(s) => s.to_string(),
+            RuspAtom::Func(_) => "#<function>".to_string(),
         };
         write!(f, "{}", str)
     }
@@ -70,5 +81,35 @@ impl std::fmt::Display for RuspExp {
             }
         };
         write!(f, "{}", str)
+    }
+}
+
+pub struct ListIter<'a>(&'a RuspExp);
+
+impl<'a> Iterator for ListIter<'a> {
+    type Item = anyhow::Result<&'a Box<RuspExp>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.0 {
+            RuspExp::Cons { car, cdr } => {
+                self.0 = cdr;
+                Some(Ok(car))
+            }
+            RuspExp::Atom(atom) => {
+                match atom {
+                    RuspAtom::Symbol(s) if s == "nil" => None,
+                    _ => Some(Err(anyhow::anyhow!(RuspErr::WrongTypeArgument))),
+                }
+            },
+        }
+    }
+}
+
+impl<'a> IntoIterator for &'a RuspExp {
+    type Item = anyhow::Result<&'a Box<RuspExp>>;
+    type IntoIter = ListIter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        ListIter(self)
     }
 }

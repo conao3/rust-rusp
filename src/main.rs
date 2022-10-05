@@ -12,12 +12,14 @@ fn repl() -> anyhow::Result<()> {
     let history_file_path = history_file.as_path();
     _ = rl.load_history(history_file_path);
 
+    let mut env = core::default_env();
+
     loop {
         let line = rl.readline("rusp> ");
         match line {
             Ok(line) => {
                 rl.add_history_entry(line.as_str());
-                let res = core::rep(&line);
+                let res = core::rep(&line, &env);
 
                 match res {
                     Ok(res) => println!("{}", res),
