@@ -32,10 +32,8 @@ macro_rules! basic_op {
 
             if $first_init_p {
                 match iter.next().unwrap() {
-                    types::RuspExp::Atom(types::RuspAtom::Int(x)) =>
-                        init = x as f64,
-                    types::RuspExp::Atom(types::RuspAtom::Float(x)) =>
-                        init = x,
+                    types::RuspExp::Atom(types::RuspAtom::Int(x)) => init = x as f64,
+                    types::RuspExp::Atom(types::RuspAtom::Float(x)) => init = x,
                     _ => unreachable!(),
                 };
             }

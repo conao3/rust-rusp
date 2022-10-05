@@ -37,6 +37,33 @@ pub struct RuspEnv {
     pub function: std::collections::HashMap<String, RuspExp>,
 }
 
+macro_rules! rusp_func {
+    ($env: ident, $(($key:expr, $value:path)),*) => {
+        {
+            $(
+                $env.function.insert($key.to_string(), crate::types::RuspExp::Atom(crate::types::RuspAtom::Func($value)));
+            )*
+            $env
+        }
+    };
+}
+
+macro_rules! nil {
+    () => {
+        crate::types::RuspExp::Atom(crate::types::RuspAtom::Symbol("nil".to_string()))
+    };
+}
+
+macro_rules! t {
+    () => {
+        crate::types::RuspExp::Atom(crate::types::RuspAtom::Symbol("t".to_string()))
+    };
+}
+
+pub(crate) use nil;
+pub(crate) use rusp_func;
+pub(crate) use t;
+
 impl PartialEq for RuspAtom {
     fn eq(&self, other: &RuspAtom) -> bool {
         if let RuspAtom::Func(_) = self {

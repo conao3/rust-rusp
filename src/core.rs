@@ -5,32 +5,16 @@ use crate::types;
 pub fn default_env() -> types::RuspEnv {
     let mut env = types::RuspEnv::default();
 
-    env.value.insert(
-        "nil".to_string(),
-        types::RuspExp::Atom(types::RuspAtom::Symbol("nil".to_string())),
-    );
-    env.value.insert(
-        "t".to_string(),
-        types::RuspExp::Atom(types::RuspAtom::Symbol("t".to_string())),
-    );
+    env.value.insert("nil".to_string(), types::nil!());
+    env.value.insert("t".to_string(), types::t!());
 
-    env.function.insert(
-        "+".to_string(),
-        types::RuspExp::Atom(types::RuspAtom::Func(builtin::plus)),
-    );
-    env.function.insert(
-        "-".to_string(),
-        types::RuspExp::Atom(types::RuspAtom::Func(builtin::minus)),
-    );
-    env.function.insert(
-        "*".to_string(),
-        types::RuspExp::Atom(types::RuspAtom::Func(builtin::multiply)),
-    );
-    env.function.insert(
-        "/".to_string(),
-        types::RuspExp::Atom(types::RuspAtom::Func(builtin::divide)),
-    );
-    env
+    types::rusp_func!(
+        env,
+        ("+", builtin::plus),
+        ("-", builtin::minus),
+        ("*", builtin::multiply),
+        ("/", builtin::divide)
+    )
 }
 
 fn read(x: &str) -> anyhow::Result<types::RuspExp> {
