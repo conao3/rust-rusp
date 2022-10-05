@@ -4,7 +4,7 @@ pub struct Reader<'a> {
     input: &'a str,
 }
 
-impl Reader<'_> {
+impl<'a> Reader<'a> {
     pub fn new(input: &str) -> Reader {
         Reader { input }
     }
@@ -13,7 +13,7 @@ impl Reader<'_> {
         self.input = self.input.trim_start();
     }
 
-    fn read_atom(&mut self) -> anyhow::Result<types::RuspExp> {
+    fn read_atom(&mut self) -> anyhow::Result<types::RuspExp<'a>> {
         self.skip_whitespace();
 
         let int_pattern = regex::Regex::new(r"^([+-]?[0-9]+)(?:[ ();]|$)").unwrap();
@@ -46,7 +46,7 @@ impl Reader<'_> {
         anyhow::bail!("Failed to parse") // unreachable
     }
 
-    fn read_cons(&mut self) -> anyhow::Result<types::RuspExp> {
+    fn read_cons(&mut self) -> anyhow::Result<types::RuspExp<'a>> {
         self.skip_whitespace();
 
         if self.input.is_empty() {
@@ -91,7 +91,7 @@ impl Reader<'_> {
         })
     }
 
-    pub fn read(&mut self) -> anyhow::Result<types::RuspExp> {
+    pub fn read(&mut self) -> anyhow::Result<types::RuspExp<'a>> {
         self.skip_whitespace();
         let c = self
             .input
