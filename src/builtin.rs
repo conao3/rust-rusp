@@ -1,175 +1,81 @@
 use anyhow::Context;
 
+use crate::core;
 use crate::types;
 
-pub fn plus(arg: types::RuspExp) -> anyhow::Result<types::RuspExp> {
-    let mut acc_int: i64 = 0;
-    let mut acc_float: f64 = 0.0;
-    let mut float_p = false;
+macro_rules! basic_op {
+    ($env: expr, $fn: expr, $init: expr, $first_init_p: expr) => {
+        |arg: types::RuspExp| -> anyhow::Result<types::RuspExp> {
+            let arg_lst = arg
+                .into_iter()
+                .collect::<Result<Vec<_>, _>>()
+                .with_context(|| format!("{}", stringify!($fn)))?;
 
-    for exp_ in arg.into_iter() {
-        let exp = exp_.with_context(|| types::RuspErr::WrongTypeArgument)?;
-        match **exp {
-            types::RuspExp::Atom(types::RuspAtom::Int(i)) => {
-                if float_p {
-                    acc_float += i as f64;
-                    continue;
-                }
-                acc_int += i;
+            let lst = arg_lst
+                .iter()
+                .map(|x| core::eval((***x).clone(), $env))
+                .collect::<Result<Vec<_>, _>>()
+                .with_context(|| format!("{}", stringify!($fn)))?;
+
+            anyhow::ensure!(
+                lst.iter().all(|x| x.numberp()),
+                types::RuspErr::WrongTypeArgument
+            );
+
+            if lst.len() == 0 {
+                return Ok(types::RuspExp::Atom(types::RuspAtom::Int($init)));
             }
-            types::RuspExp::Atom(types::RuspAtom::Float(f)) => {
-                if !float_p {
-                    acc_float = acc_int as f64;
-                    float_p = true;
-                }
-                acc_float += f;
+
+            let floatp = lst.iter().any(|x| x.floatp());
+            let mut init: f64 = $init as f64;
+            let mut iter = lst.into_iter();
+
+            if $first_init_p {
+                match iter.next().unwrap() {
+                    types::RuspExp::Atom(types::RuspAtom::Int(x)) =>
+                        init = x as f64,
+                    types::RuspExp::Atom(types::RuspAtom::Float(x)) =>
+                        init = x,
+                    _ => unreachable!(),
+                };
             }
-            _ => anyhow::bail!(types::RuspErr::WrongTypeArgument),
+
+            if floatp {
+                let mut acc: f64 = init as f64;
+                for x in iter {
+                    match x {
+                        types::RuspExp::Atom(types::RuspAtom::Int(i)) => acc = $fn(acc, i as f64),
+                        types::RuspExp::Atom(types::RuspAtom::Float(f)) => acc = $fn(acc, f),
+                        _ => unreachable!(),
+                    }
+                }
+                return Ok(types::RuspExp::Atom(types::RuspAtom::Float(acc)));
+            }
+
+            let mut acc: i64 = init as i64;
+            for x in iter {
+                match x {
+                    types::RuspExp::Atom(types::RuspAtom::Int(i)) => acc = $fn(acc, i),
+                    _ => unreachable!(),
+                }
+            }
+            Ok(types::RuspExp::Atom(types::RuspAtom::Int(acc)))
         }
-    }
-
-    if float_p {
-        return Ok(types::RuspExp::Atom(types::RuspAtom::Float(acc_float)));
-    }
-
-    Ok(types::RuspExp::Atom(types::RuspAtom::Int(acc_int)))
+    };
 }
 
-pub fn minus(arg: types::RuspExp) -> anyhow::Result<types::RuspExp> {
-    let mut acc_int: i64 = 0;
-    let mut acc_float: f64 = 0.0;
-    let mut float_p = false;
-
-    let mut iter = arg.into_iter();
-    let first = iter.next();
-    if first.is_none() {
-        return Ok(types::RuspExp::Atom(types::RuspAtom::Int(0)));
-    }
-
-    match first.unwrap() {
-        Ok(exp) => match **exp {
-            types::RuspExp::Atom(types::RuspAtom::Int(i)) => {
-                acc_int = i;
-            }
-            types::RuspExp::Atom(types::RuspAtom::Float(f)) => {
-                acc_float = f;
-                float_p = true;
-            }
-            _ => anyhow::bail!(types::RuspErr::WrongTypeArgument),
-        },
-        Err(e) => anyhow::bail!(e),
-    }
-
-    for exp_ in iter {
-        let exp = exp_.with_context(|| types::RuspErr::WrongTypeArgument)?;
-        match **exp {
-            types::RuspExp::Atom(types::RuspAtom::Int(i)) => {
-                if float_p {
-                    acc_float -= i as f64;
-                    continue;
-                }
-                acc_int -= i;
-            }
-            types::RuspExp::Atom(types::RuspAtom::Float(f)) => {
-                if !float_p {
-                    acc_float = acc_int as f64;
-                    float_p = true;
-                }
-                acc_float -= f;
-            }
-            _ => anyhow::bail!(types::RuspErr::WrongTypeArgument),
-        }
-    }
-
-    if float_p {
-        return Ok(types::RuspExp::Atom(types::RuspAtom::Float(acc_float)));
-    }
-
-    Ok(types::RuspExp::Atom(types::RuspAtom::Int(acc_int)))
+pub fn plus(arg: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
+    basic_op!(env, |acc, x| acc + x, 0, false)(arg)
 }
 
-pub fn multiply(arg: types::RuspExp) -> anyhow::Result<types::RuspExp> {
-    let mut acc_int: i64 = 1;
-    let mut acc_float: f64 = 1.0;
-    let mut float_p = false;
-
-    for exp_ in arg.into_iter() {
-        let exp = exp_.with_context(|| types::RuspErr::WrongTypeArgument)?;
-        match **exp {
-            types::RuspExp::Atom(types::RuspAtom::Int(i)) => {
-                if float_p {
-                    acc_float += i as f64;
-                    continue;
-                }
-                acc_int *= i;
-            }
-            types::RuspExp::Atom(types::RuspAtom::Float(f)) => {
-                if !float_p {
-                    acc_float = acc_int as f64;
-                    float_p = true;
-                }
-                acc_float *= f;
-            }
-            _ => anyhow::bail!(types::RuspErr::WrongTypeArgument),
-        }
-    }
-
-    if float_p {
-        return Ok(types::RuspExp::Atom(types::RuspAtom::Float(acc_float)));
-    }
-
-    Ok(types::RuspExp::Atom(types::RuspAtom::Int(acc_int)))
+pub fn minus(arg: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
+    basic_op!(env, |acc, x| acc - x, 0, true)(arg)
 }
 
-pub fn divide(arg: types::RuspExp) -> anyhow::Result<types::RuspExp> {
-    let mut acc_int: i64 = 0;
-    let mut acc_float: f64 = 0.0;
-    let mut float_p = false;
+pub fn multiply(arg: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
+    basic_op!(env, |acc, x| acc * x, 1, false)(arg)
+}
 
-    let mut iter = arg.into_iter();
-    let first = iter.next();
-    if first.is_none() {
-        return Ok(types::RuspExp::Atom(types::RuspAtom::Int(1)));
-    }
-
-    match first.unwrap() {
-        Ok(exp) => match **exp {
-            types::RuspExp::Atom(types::RuspAtom::Int(i)) => {
-                acc_int = i;
-            }
-            types::RuspExp::Atom(types::RuspAtom::Float(f)) => {
-                acc_float = f;
-                float_p = true;
-            }
-            _ => anyhow::bail!(types::RuspErr::WrongTypeArgument),
-        },
-        Err(e) => anyhow::bail!(e),
-    }
-
-    for exp_ in iter {
-        let exp = exp_.with_context(|| types::RuspErr::WrongTypeArgument)?;
-        match **exp {
-            types::RuspExp::Atom(types::RuspAtom::Int(i)) => {
-                if float_p {
-                    acc_float /= i as f64;
-                    continue;
-                }
-                acc_int /= i;
-            }
-            types::RuspExp::Atom(types::RuspAtom::Float(f)) => {
-                if !float_p {
-                    acc_float = acc_int as f64;
-                    float_p = true;
-                }
-                acc_float /= f;
-            }
-            _ => anyhow::bail!(types::RuspErr::WrongTypeArgument),
-        }
-    }
-
-    if float_p {
-        return Ok(types::RuspExp::Atom(types::RuspAtom::Float(acc_float)));
-    }
-
-    Ok(types::RuspExp::Atom(types::RuspAtom::Int(acc_int)))
+pub fn divide(arg: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
+    basic_op!(env, |acc, x| acc / x, 1, true)(arg)
 }

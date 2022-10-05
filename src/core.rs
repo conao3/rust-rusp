@@ -38,7 +38,7 @@ fn read(x: &str) -> anyhow::Result<types::RuspExp> {
     reader.read()
 }
 
-fn eval(x: types::RuspExp, mut env: &types::RuspEnv) -> anyhow::Result<types::RuspExp> {
+pub fn eval(x: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
     match x {
         types::RuspExp::Atom(atom) => match atom {
             types::RuspAtom::Symbol(s) => env
@@ -56,7 +56,7 @@ fn eval(x: types::RuspExp, mut env: &types::RuspEnv) -> anyhow::Result<types::Ru
                     .ok_or_else(|| anyhow::anyhow!("Function not found: {}", s))?;
 
                 match *func {
-                    types::RuspExp::Atom(types::RuspAtom::Func(f)) => f(*cdr),
+                    types::RuspExp::Atom(types::RuspAtom::Func(f)) => f(*cdr, env),
                     _ => Err(anyhow::anyhow!("Not a function: {}", s)),
                 }
             }
@@ -69,7 +69,7 @@ fn print(x: types::RuspExp) -> anyhow::Result<String> {
     Ok(x.to_string())
 }
 
-pub fn rep(mut x: &str, mut env: &types::RuspEnv) -> anyhow::Result<String> {
+pub fn rep(mut x: &str, env: &mut types::RuspEnv) -> anyhow::Result<String> {
     x = x.trim_start(); // simple skip whitespace
     anyhow::ensure!(!x.is_empty(), types::RuspErr::ReplEmptyError);
 

@@ -13,13 +13,13 @@ pub enum RuspErr {
     WrongTypeArgument,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Clone)]
 pub enum RuspAtom {
     Int(i64),
     Float(f64),
     String(String),
     Symbol(String),
-    Func(fn(RuspExp) -> anyhow::Result<RuspExp>),
+    Func(fn(RuspExp, &mut RuspEnv) -> anyhow::Result<RuspExp>),
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -35,6 +35,30 @@ pub enum RuspExp {
 pub struct RuspEnv {
     pub value: std::collections::HashMap<String, RuspExp>,
     pub function: std::collections::HashMap<String, RuspExp>,
+}
+
+impl PartialEq for RuspAtom {
+    fn eq(&self, other: &RuspAtom) -> bool {
+        if let RuspAtom::Func(_) = self {
+            return false;
+        }
+        if let RuspAtom::Func(_) = other {
+            return false;
+        }
+        self == other
+    }
+}
+
+impl std::fmt::Debug for RuspAtom {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RuspAtom::Int(i) => write!(f, "{}", i),
+            RuspAtom::Float(i) => write!(f, "{}", i),
+            RuspAtom::String(i) => write!(f, "{}", i),
+            RuspAtom::Symbol(i) => write!(f, "{}", i),
+            RuspAtom::Func(_) => write!(f, "#<function>"),
+        }
+    }
 }
 
 impl std::fmt::Display for RuspAtom {
@@ -84,24 +108,82 @@ impl std::fmt::Display for RuspExp {
     }
 }
 
+impl RuspExp {
+    pub fn nilp(&self) -> bool {
+        match self {
+            RuspExp::Atom(RuspAtom::Symbol(s)) => s == "nil",
+            _ => false,
+        }
+    }
+
+    pub fn atom(&self) -> bool {
+        matches!(self, RuspExp::Atom(_))
+    }
+
+    pub fn consp(&self) -> bool {
+        matches!(self, RuspExp::Cons { .. })
+    }
+
+    pub fn intp(&self) -> bool {
+        matches!(self, RuspExp::Atom(RuspAtom::Int(_)))
+    }
+
+    pub fn floatp(&self) -> bool {
+        matches!(self, RuspExp::Atom(RuspAtom::Float(_)))
+    }
+
+    pub fn numberp(&self) -> bool {
+        self.intp() || self.floatp()
+    }
+
+    pub fn stringp(&self) -> bool {
+        matches!(self, RuspExp::Atom(RuspAtom::String(_)))
+    }
+
+    pub fn symbolp(&self) -> bool {
+        matches!(self, RuspExp::Atom(RuspAtom::Symbol(_)))
+    }
+
+    pub fn functionp(&self) -> bool {
+        matches!(self, RuspExp::Atom(RuspAtom::Func(_)))
+    }
+
+    pub fn iter_mut(&mut self) -> std::vec::IntoIter<anyhow::Result<&mut RuspExp>> {
+        let mut lst: Vec<anyhow::Result<&mut RuspExp>> = vec![];
+        let mut cell = self;
+
+        while let RuspExp::Cons {
+            car: cell_car,
+            cdr: cell_cdr,
+        } = cell
+        {
+            lst.push(Ok(cell_car));
+            cell = cell_cdr;
+        }
+
+        if !cell.nilp() {
+            lst.push(Err(anyhow::anyhow!("dotlist")));
+        }
+        lst.into_iter()
+    }
+}
+
 pub struct ListIter<'a>(&'a RuspExp);
 
 impl<'a> Iterator for ListIter<'a> {
     type Item = anyhow::Result<&'a Box<RuspExp>>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.0 {
-            RuspExp::Cons { car, cdr } => {
-                self.0 = cdr;
-                Some(Ok(car))
-            }
-            RuspExp::Atom(atom) => {
-                match atom {
-                    RuspAtom::Symbol(s) if s == "nil" => None,
-                    _ => Some(Err(anyhow::anyhow!(RuspErr::WrongTypeArgument))),
-                }
-            },
+        if let RuspExp::Cons { car, cdr } = self.0 {
+            self.0 = cdr;
+            return Some(Ok(car));
         }
+
+        if !self.0.nilp() {
+            return Some(Err(anyhow::anyhow!("dotlist")));
+        }
+
+        None
     }
 }
 

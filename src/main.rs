@@ -19,7 +19,7 @@ fn repl() -> anyhow::Result<()> {
         match line {
             Ok(line) => {
                 rl.add_history_entry(line.as_str());
-                let res = core::rep(&line, &env);
+                let res = core::rep(&line, &mut env);
 
                 match res {
                     Ok(res) => println!("{}", res),
