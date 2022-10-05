@@ -1,7 +1,7 @@
 use crate::reader;
 use crate::types;
 
-fn read<'a>(x: &'a str) -> anyhow::Result<types::RuspExp<'a>> {
+fn read(x: &str) -> anyhow::Result<types::RuspExp> {
     let mut reader = reader::Reader::new(x);
     reader.read()
 }
