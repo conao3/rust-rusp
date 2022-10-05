@@ -1,5 +1,6 @@
 use anyhow::Context;
 use rusp::core;
+use rusp::types;
 
 fn repl() -> anyhow::Result<()> {
     let mut rl = rustyline::Editor::<()>::new()?;
@@ -20,8 +21,8 @@ fn repl() -> anyhow::Result<()> {
 
                 match res {
                     Ok(res) => println!("{}", res),
-                    Err(e) => match e.downcast_ref::<rusp::types::RuspErr>() {
-                        Some(rusp::types::RuspErr::ReplEmptyError) => (),
+                    Err(e) => match e.downcast_ref::<types::RuspErr>() {
+                        Some(types::RuspErr::ReplEmptyError) => (),
                         _ => eprintln!("{}", e),
                     },
                 }
