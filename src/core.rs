@@ -1,11 +1,6 @@
 use crate::reader;
 use crate::types;
 
-fn read(x: &str) -> anyhow::Result<types::RuspExp> {
-    let mut reader = reader::Reader::new(x);
-    reader.read()
-}
-
 fn eval(x: types::RuspExp) -> anyhow::Result<types::RuspExp> {
     Ok(x)
 }
@@ -18,5 +13,6 @@ pub fn rep(mut x: &str) -> anyhow::Result<String> {
     x = x.trim_start(); // simple skip whitespace
     anyhow::ensure!(!x.is_empty(), types::RuspErr::ReplEmptyError);
 
-    print(eval(read(x)?)?)
+    let mut reader = reader::Reader::new(x);
+    print(eval(reader.read()?)?)
 }
