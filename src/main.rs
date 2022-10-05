@@ -1,3 +1,5 @@
+#![warn(rust_2018_idioms)]
+
 use anyhow::Context;
 use rusp::core;
 use rusp::types;
