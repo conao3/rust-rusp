@@ -48,15 +48,11 @@ impl Reader<'_> {
     fn read_cons(&mut self) -> anyhow::Result<types::RuspExp> {
         self.skip_whitespace();
 
-        if self.input.is_empty() {
-            anyhow::bail!(types::RuspErr::ReaderEofError);
-        }
+        anyhow::ensure!(!self.input.is_empty(), types::RuspErr::ReaderEofError);
 
         if self.input.starts_with(')') {
             self.input = &self.input[1..]; // skip ')'
-            return Ok(types::RuspExp::Atom(types::RuspAtom::Symbol(
-                "nil".to_string(),
-            )));
+            return Ok(types::nil!());
         }
 
         let car = self.read()?;
@@ -169,7 +165,7 @@ mod tests {
         let input = "()";
         let mut reader = Reader::new(input);
         let exp = reader.read().unwrap();
-        assert_eq!(exp, Atom(Symbol("nil".to_string())));
+        assert_eq!(exp, types::nil!());
 
         let input = "(1 2 3)";
         let mut reader = Reader::new(input);
@@ -182,7 +178,7 @@ mod tests {
                     car: Box::new(Atom(Int(2))),
                     cdr: Box::new(Cons {
                         car: Box::new(Atom(Int(3))),
-                        cdr: Box::new(Atom(Symbol("nil".to_string()))),
+                        cdr: Box::new(types::nil!()),
                     }),
                 }),
             }
