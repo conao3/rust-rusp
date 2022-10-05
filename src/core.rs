@@ -22,6 +22,14 @@ pub fn default_env() -> types::RuspEnv {
         "-".to_string(),
         types::RuspExp::Atom(types::RuspAtom::Func(builtin::minus)),
     );
+    env.function.insert(
+        "*".to_string(),
+        types::RuspExp::Atom(types::RuspAtom::Func(builtin::multiply)),
+    );
+    env.function.insert(
+        "/".to_string(),
+        types::RuspExp::Atom(types::RuspAtom::Func(builtin::divide)),
+    );
     env
 }
 
