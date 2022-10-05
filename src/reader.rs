@@ -25,8 +25,7 @@ impl Reader<'_> {
             let f = s.parse::<f64>().unwrap();
             self.input = &self.input[s.len()..];
 
-            // return Ok(types::RuspExp::Atom(types::RuspAtom::Float(f)));
-            return Ok(types::RuspExp::Atom(types::RuspAtom::Int(f as i64)));
+            return Ok(types::RuspExp::Atom(types::RuspAtom::Float(f)));
         }
 
         if let Some(m) = int_pattern.captures(self.input) {
@@ -40,7 +39,7 @@ impl Reader<'_> {
         if let Some(m) = symbol_pattern.captures(self.input) {
             let s = m.get(0).unwrap().as_str();
             self.input = &self.input[s.len()..];
-            return Ok(types::RuspExp::Atom(types::RuspAtom::Symbol(s)));
+            return Ok(types::RuspExp::Atom(types::RuspAtom::Symbol(s.to_string())));
         }
 
         anyhow::bail!("Failed to parse") // unreachable
@@ -55,7 +54,9 @@ impl Reader<'_> {
 
         if self.input.starts_with(')') {
             self.input = &self.input[1..]; // skip ')'
-            return Ok(types::NIL);
+            return Ok(types::RuspExp::Atom(types::RuspAtom::Symbol(
+                "nil".to_string(),
+            )));
         }
 
         let car = self.read()?;
@@ -79,15 +80,15 @@ impl Reader<'_> {
             self.input = &self.input[1..]; // skip ')'
 
             return Ok(types::RuspExp::Cons {
-                car: &car,
-                cdr: &cdr,
+                car: Box::new(car),
+                cdr: Box::new(cdr),
             });
         }
 
         let cdr = self.read_cons()?;
         Ok(types::RuspExp::Cons {
-            car: &car,
-            cdr: &cdr,
+            car: Box::new(car),
+            cdr: Box::new(cdr),
         })
     }
 
@@ -137,30 +138,30 @@ mod tests {
         let exp = reader.read().unwrap();
         assert_eq!(exp, Atom(Int(42)));
 
-        // let input = "42.3";
-        // let mut reader = Reader::new(input);
-        // let exp = reader.read().unwrap();
-        // assert_eq!(exp, Atom(Float(42.3)));
+        let input = "42.3";
+        let mut reader = Reader::new(input);
+        let exp = reader.read().unwrap();
+        assert_eq!(exp, Atom(Float(42.3)));
 
-        // let input = "   42.3";
-        // let mut reader = Reader::new(input);
-        // let exp = reader.read().unwrap();
-        // assert_eq!(exp, Atom(Float(42.3)));
+        let input = "   42.3";
+        let mut reader = Reader::new(input);
+        let exp = reader.read().unwrap();
+        assert_eq!(exp, Atom(Float(42.3)));
 
         let input = "a";
         let mut reader = Reader::new(input);
         let exp = reader.read().unwrap();
-        assert_eq!(exp, Atom(Symbol("a")));
+        assert_eq!(exp, Atom(Symbol('a'.to_string())));
 
         let input = "   a";
         let mut reader = Reader::new(input);
         let exp = reader.read().unwrap();
-        assert_eq!(exp, Atom(Symbol("a")));
+        assert_eq!(exp, Atom(Symbol('a'.to_string())));
 
         let input = "1+";
         let mut reader = Reader::new(input);
         let exp = reader.read().unwrap();
-        assert_eq!(exp, Atom(Symbol("1+")));
+        assert_eq!(exp, Atom(Symbol("1+".to_string())));
     }
 
     #[test]
@@ -168,7 +169,7 @@ mod tests {
         let input = "()";
         let mut reader = Reader::new(input);
         let exp = reader.read().unwrap();
-        assert_eq!(exp, types::NIL);
+        assert_eq!(exp, Atom(Symbol("nil".to_string())));
 
         let input = "(1 2 3)";
         let mut reader = Reader::new(input);
@@ -176,14 +177,14 @@ mod tests {
         assert_eq!(
             exp,
             Cons {
-                car: &Atom(Int(1)),
-                cdr: &Cons {
-                    car: &Atom(Int(2)),
-                    cdr: &Cons {
-                        car: &Atom(Int(3)),
-                        cdr: &types::NIL,
-                    },
-                },
+                car: Box::new(Atom(Int(1))),
+                cdr: Box::new(Cons {
+                    car: Box::new(Atom(Int(2))),
+                    cdr: Box::new(Cons {
+                        car: Box::new(Atom(Int(3))),
+                        cdr: Box::new(Atom(Symbol("nil".to_string()))),
+                    }),
+                }),
             }
         );
 
@@ -193,11 +194,11 @@ mod tests {
         assert_eq!(
             exp,
             Cons {
-                car: &Atom(Int(1)),
-                cdr: &Cons {
-                    car: &Atom(Int(2)),
-                    cdr: &Atom(Int(3)),
-                },
+                car: Box::new(Atom(Int(1))),
+                cdr: Box::new(Cons {
+                    car: Box::new(Atom(Int(2))),
+                    cdr: Box::new(Atom(Int(3))),
+                }),
             }
         );
 
