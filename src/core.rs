@@ -10,10 +10,10 @@ pub fn default_env() -> types::RuspEnv {
 
     types::rusp_func!(
         env,
-        ("+", builtin::plus),
-        ("-", builtin::minus),
-        ("*", builtin::multiply),
-        ("/", builtin::divide)
+        ("+", builtin::arith_plus),
+        ("-", builtin::arith_minus),
+        ("*", builtin::arith_multiply),
+        ("/", builtin::arith_divide)
     )
 }
 

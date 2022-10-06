@@ -62,18 +62,18 @@ macro_rules! basic_op {
     };
 }
 
-pub fn plus(arg: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
+pub fn arith_plus(arg: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
     basic_op!(env, |acc, x| acc + x, 0, false)(arg)
 }
 
-pub fn minus(arg: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
+pub fn arith_minus(arg: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
     basic_op!(env, |acc, x| acc - x, 0, true)(arg)
 }
 
-pub fn multiply(arg: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
+pub fn arith_multiply(arg: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
     basic_op!(env, |acc, x| acc * x, 1, false)(arg)
 }
 
-pub fn divide(arg: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
+pub fn arith_divide(arg: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
     basic_op!(env, |acc, x| acc / x, 1, true)(arg)
 }
