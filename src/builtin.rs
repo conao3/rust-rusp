@@ -1,5 +1,3 @@
-use anyhow::Context;
-
 use crate::core;
 use crate::types;
 
@@ -27,14 +25,12 @@ macro_rules! basic_op {
         |arg: types::RuspExp| -> anyhow::Result<types::RuspExp> {
             let arg_lst = arg
                 .into_iter()
-                .collect::<Result<Vec<_>, _>>()
-                .with_context(|| format!("{}", stringify!($fn)))?;
+                .collect::<Result<Vec<_>, _>>()?;
 
             let lst = arg_lst
                 .iter()
                 .map(|x| core::eval((***x).clone(), $env))
-                .collect::<Result<Vec<_>, _>>()
-                .with_context(|| format!("{}", stringify!($fn)))?;
+                .collect::<Result<Vec<_>, _>>()?;
 
             anyhow::ensure!(
                 lst.iter().all(|x| x.numberp()),
@@ -86,14 +82,12 @@ macro_rules! basic_pred {
         |arg: types::RuspExp| -> anyhow::Result<types::RuspExp> {
             let arg_lst = arg
                 .into_iter()
-                .collect::<Result<Vec<_>, _>>()
-                .with_context(|| format!("{}", stringify!($fn)))?;
+                .collect::<Result<Vec<_>, _>>()?;
 
             let lst = arg_lst
                 .iter()
                 .map(|x| core::eval((***x).clone(), $env))
-                .collect::<Result<Vec<_>, _>>()
-                .with_context(|| format!("{}", stringify!($fn)))?;
+                .collect::<Result<Vec<_>, _>>()?;
 
             anyhow::ensure!(
                 lst.iter().all(|x| x.numberp()),
