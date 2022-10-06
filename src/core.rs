@@ -20,7 +20,7 @@ pub fn default_env() -> types::RuspEnv {
         (">=", builtin::arith_gte),
         ("=", builtin::arith_eq),
         ("!=", builtin::arith_neq),
-        ("if", builtin::if_)
+        ("if", builtin::if_),
     )
     // ("quote", builtin::quote),
     // ("def", builtin::def),

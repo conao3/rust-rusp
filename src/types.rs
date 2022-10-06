@@ -44,7 +44,7 @@ pub struct RuspEnv {
 }
 
 macro_rules! rusp_func {
-    ($env: ident, $(($key:expr, $value:path)),*) => {
+    ($env: ident, $(($key:expr, $value:path)),*,) => {
         {
             $(
                 $env.function.insert($key.to_string(), crate::types::RuspExp::Atom(crate::types::RuspAtom::Func($value)));
