@@ -19,9 +19,9 @@ pub fn default_env() -> types::RuspEnv {
         (">", builtin::arith_gt),
         (">=", builtin::arith_gte),
         ("=", builtin::arith_eq),
-        ("!=", builtin::arith_neq)
+        ("!=", builtin::arith_neq),
+        ("if", builtin::if_)
     )
-    // ("if", builtin::if_func),
     // ("quote", builtin::quote),
     // ("def", builtin::def),
     // ("fn", builtin::fn_func),

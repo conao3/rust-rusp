@@ -11,6 +11,12 @@ pub enum RuspErr {
 
     #[error("WrongTypeArgument")]
     WrongTypeArgument,
+    #[error("WrongNumberOfArguments")]
+    WrongNumberOfArguments {
+        required: usize,
+        allowed: Option<usize>,
+        actual: usize,
+    },
 }
 
 #[derive(Clone)]
@@ -143,6 +149,10 @@ impl RuspExp {
         }
     }
 
+    pub fn non_nil_p(&self) -> bool {
+        !self.nilp()
+    }
+
     pub fn atom(&self) -> bool {
         matches!(self, RuspExp::Atom(_))
     }
@@ -194,6 +204,32 @@ impl RuspExp {
         lst.into_iter()
     }
 }
+
+macro_rules! extract_args {
+    ($arg: ident, ($($var: ident),+ &optional $($var_opt: ident),*) $body: block) => {{
+        let mut args = $arg.into_iter().collect::<Result<std::collections::VecDeque<_>, _>>()?;
+        let args_len = args.len();
+        let nil = Box::new(crate::types::nil!());
+        $(
+            let $var = args.pop_front().ok_or_else(|| anyhow::anyhow!(types::RuspErr::WrongNumberOfArguments {
+                required: 1,
+                allowed: None,
+                actual: args_len,
+            }))?;
+        )+
+        $(
+            let $var_opt = args.pop_front().unwrap_or_else(|| &nil);
+        )*
+        anyhow::ensure!(args.is_empty(), types::RuspErr::WrongNumberOfArguments {
+            required: 1,
+            allowed: None,
+            actual: args_len,
+        });
+        $body
+    }}
+}
+
+pub(crate) use extract_args;
 
 pub struct ListIter<'a>(&'a RuspExp);
 

@@ -192,3 +192,13 @@ pub fn arith_gt(arg: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result
 pub fn arith_gte(arg: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
     basic_pred!(env, |acc, x| acc >= x)(arg)
 }
+
+pub fn if_(arg: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
+    types::extract_args!(arg, (cond, then &optional else_) {
+        if core::eval(*cond.clone(), env)?.non_nil_p() {
+            core::eval(*then.clone(), env)
+        } else {
+            core::eval(*else_.clone(), env)
+        }
+    })
+}
