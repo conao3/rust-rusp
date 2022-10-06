@@ -198,8 +198,8 @@ impl RuspExp {
             cell = cell_cdr;
         }
 
-        if !cell.nilp() {
-            lst.push(Err(anyhow::anyhow!("dotlist")));
+        if !cell.nilp() { // dotlist is not allowed
+            lst.push(Err(anyhow::anyhow!(RuspErr::WrongTypeArgument)));
         }
         lst.into_iter()
     }
@@ -248,8 +248,8 @@ impl<'a> Iterator for ListIter<'a> {
             return Some(Ok(car));
         }
 
-        if !self.0.nilp() {
-            return Some(Err(anyhow::anyhow!("dotlist")));
+        if !self.0.nilp() { // dotlist is not allowed
+            return Some(Err(anyhow::anyhow!(RuspErr::WrongTypeArgument)));
         }
 
         None
