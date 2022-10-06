@@ -205,8 +205,7 @@ defun!(arith_gte, arg, env, _, {
 
 defun!(if_, arg, env, (cond, then, &optional else_), {
     if core::eval(*cond.clone(), env)?.non_nil_p() {
-        core::eval(*then.clone(), env)
-    } else {
-        core::eval(*else_.clone(), env)
+        return core::eval(*then.clone(), env)
     }
+    core::eval(*else_.clone(), env)
 });
