@@ -3,6 +3,17 @@ use anyhow::Context;
 use crate::core;
 use crate::types;
 
+macro_rules! defun {
+    ($name: ident, $arg: ident, $env: ident, $arglist: tt, $body: block) => {
+        pub fn $name(
+            $arg: types::RuspExp,
+            $env: &mut types::RuspEnv,
+        ) -> anyhow::Result<types::RuspExp> {
+            types::extract_args!($arg, $env, $arglist, $body)
+        }
+    };
+}
+
 macro_rules! basic_op {
     ($env: expr, $fn: expr, $init: expr, $first_init_p: expr) => {
         |arg: types::RuspExp| -> anyhow::Result<types::RuspExp> {
@@ -193,12 +204,10 @@ pub fn arith_gte(arg: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Resul
     basic_pred!(env, |acc, x| acc >= x)(arg)
 }
 
-pub fn if_(arg: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
-    types::extract_args!(arg, (cond, then &optional else_) {
-        if core::eval(*cond.clone(), env)?.non_nil_p() {
-            core::eval(*then.clone(), env)
-        } else {
-            core::eval(*else_.clone(), env)
-        }
-    })
-}
+defun!(if_, arg, env, (cond, then, &optional else_), {
+    if core::eval(*cond.clone(), env)?.non_nil_p() {
+        core::eval(*then.clone(), env)
+    } else {
+        core::eval(*else_.clone(), env)
+    }
+});

@@ -206,20 +206,23 @@ impl RuspExp {
 }
 
 macro_rules! extract_args {
-    ($arg: ident, ($($var: ident),+ &optional $($var_opt: ident),*) $body: block) => {{
+    (@var $var: ident, $args: ident, $args_len: ident, $nil: ident) => {
+        let $var = $args.pop_front().ok_or_else(|| anyhow::anyhow!(types::RuspErr::WrongNumberOfArguments {
+            required: 1,
+            allowed: None,
+            actual: $args_len,
+        }))?;
+    };
+    (@var &optional $var: ident, $args: ident, $args_len: ident, $nil: ident) => {
+        let $var = $args.pop_front().unwrap_or_else(|| &$nil);
+    };
+    ($arg: ident, $env: ident, ($($(& $annotation: ident)? $var: ident),+), $body: block) => {{
         let mut args = $arg.into_iter().collect::<Result<std::collections::VecDeque<_>, _>>()?;
         let args_len = args.len();
         let nil = Box::new(crate::types::nil!());
         $(
-            let $var = args.pop_front().ok_or_else(|| anyhow::anyhow!(types::RuspErr::WrongNumberOfArguments {
-                required: 1,
-                allowed: None,
-                actual: args_len,
-            }))?;
+            crate::types::extract_args!(@var $(& $annotation)? $var, args, args_len, nil);
         )+
-        $(
-            let $var_opt = args.pop_front().unwrap_or_else(|| &nil);
-        )*
         anyhow::ensure!(args.is_empty(), types::RuspErr::WrongNumberOfArguments {
             required: 1,
             allowed: None,
