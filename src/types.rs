@@ -161,6 +161,10 @@ impl RuspExp {
         matches!(self, RuspExp::Cons { .. })
     }
 
+    pub fn listp(&self) -> bool {
+        self.nilp() || self.consp()
+    }
+
     pub fn intp(&self) -> bool {
         matches!(self, RuspExp::Atom(RuspAtom::Int(_)))
     }
