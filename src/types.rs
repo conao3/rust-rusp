@@ -216,6 +216,9 @@ macro_rules! extract_args {
     (@var &optional $var: ident, $args: ident, $args_len: ident, $nil: ident) => {
         let $var = $args.pop_front().unwrap_or_else(|| &$nil);
     };
+    ($arg: ident, $env: ident, _, $body: block) => {{
+        $body
+    }};
     ($arg: ident, $env: ident, ($($(& $annotation: ident)? $var: ident),+), $body: block) => {{
         let mut args = $arg.into_iter().collect::<Result<std::collections::VecDeque<_>, _>>()?;
         let args_len = args.len();
@@ -229,7 +232,7 @@ macro_rules! extract_args {
             actual: args_len,
         });
         $body
-    }}
+    }};
 }
 
 pub(crate) use extract_args;

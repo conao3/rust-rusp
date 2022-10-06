@@ -4,6 +4,14 @@ use crate::core;
 use crate::types;
 
 macro_rules! defun {
+    ($name: ident, $arg: ident, $env: ident, _, $body: block) => {
+        pub fn $name(
+            $arg: types::RuspExp,
+            $env: &mut types::RuspEnv,
+        ) -> anyhow::Result<types::RuspExp> {
+            types::extract_args!($arg, $env, _, $body)
+        }
+    };
     ($name: ident, $arg: ident, $env: ident, $arglist: tt, $body: block) => {
         pub fn $name(
             $arg: types::RuspExp,
@@ -155,54 +163,45 @@ macro_rules! basic_pred {
     };
 }
 
-pub fn arith_plus(arg: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
+defun!(arith_plus, arg, env, _, {
     basic_op!(env, |acc, x| acc + x, 0, false)(arg)
-}
+});
 
-pub fn arith_minus(
-    arg: types::RuspExp,
-    env: &mut types::RuspEnv,
-) -> anyhow::Result<types::RuspExp> {
+defun!(arith_minus, arg, env, _, {
     basic_op!(env, |acc, x| acc - x, 0, true)(arg)
-}
+});
 
-pub fn arith_multiply(
-    arg: types::RuspExp,
-    env: &mut types::RuspEnv,
-) -> anyhow::Result<types::RuspExp> {
+defun!(arith_multiply, arg, env, _, {
     basic_op!(env, |acc, x| acc * x, 1, false)(arg)
-}
+});
 
-pub fn arith_divide(
-    arg: types::RuspExp,
-    env: &mut types::RuspEnv,
-) -> anyhow::Result<types::RuspExp> {
+defun!(arith_divide, arg, env, _, {
     basic_op!(env, |acc, x| acc / x, 1, true)(arg)
-}
+});
 
-pub fn arith_eq(arg: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
+defun!(arith_eq, arg, env, _, {
     basic_pred!(env, |acc, x| acc == x)(arg)
-}
+});
 
-pub fn arith_neq(arg: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
+defun!(arith_neq, arg, env, _, {
     basic_pred!(env, |acc, x| acc != x)(arg)
-}
+});
 
-pub fn arith_lt(arg: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
+defun!(arith_lt, arg, env, _, {
     basic_pred!(env, |acc, x| acc < x)(arg)
-}
+});
 
-pub fn arith_lte(arg: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
+defun!(arith_lte, arg, env, _, {
     basic_pred!(env, |acc, x| acc <= x)(arg)
-}
+});
 
-pub fn arith_gt(arg: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
+defun!(arith_gt, arg, env, _, {
     basic_pred!(env, |acc, x| acc > x)(arg)
-}
+});
 
-pub fn arith_gte(arg: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
+defun!(arith_gte, arg, env, _, {
     basic_pred!(env, |acc, x| acc >= x)(arg)
-}
+});
 
 defun!(if_, arg, env, (cond, then, &optional else_), {
     if core::eval(*cond.clone(), env)?.non_nil_p() {
