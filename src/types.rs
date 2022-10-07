@@ -136,15 +136,10 @@ impl std::fmt::Display for RuspExp {
                     cell = cell_cdr;
                 }
 
-                if let RuspExp::Atom(atom) = &**cell {
-                    match atom {
-                        RuspAtom::Symbol(s) if s == "nil" => (),
-                        _ => {
-                            lst.push('.'.to_string());
-                            lst.push(atom.to_string());
-                        }
-                    }
+                if let RuspExp::Atom(RuspAtom::Symbol(s)) = &**cell && s != "nil" {
+                    lst.push(format!(". {}", cell));
                 }
+
                 format!("({})", lst.join(" "))
             }()
         };
