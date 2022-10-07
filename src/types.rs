@@ -6,8 +6,6 @@ pub enum RuspErr {
     ReaderError,
     #[error("ReaderEofError")]
     ReaderEofError,
-    #[error("ReaderInternalError")]
-    ReaderInternalError,
 
     #[error("WrongTypeArgument")]
     WrongTypeArgument,
