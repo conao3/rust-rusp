@@ -118,7 +118,7 @@ impl std::fmt::Display for RuspExp {
             RuspExp::Cons { car, cdr } => || -> String {
                 if let RuspExp::Atom(RuspAtom::Symbol(s)) = &**car && s == "quote" {
                     if let RuspExp::Cons { car, cdr } = &**cdr {
-                        if let RuspExp::Atom(RuspAtom::Symbol(s)) = &**cdr && s == "nil" {
+                        if cdr.nilp() {
                             return format!("'{}", car);
                         }
                     }
@@ -136,7 +136,7 @@ impl std::fmt::Display for RuspExp {
                     cell = cell_cdr;
                 }
 
-                if let RuspExp::Atom(RuspAtom::Symbol(s)) = &**cell && s != "nil" {
+                if cell.non_nil_p() {
                     lst.push(format!(". {}", cell));
                 }
 
