@@ -97,6 +97,18 @@ impl Reader<'_> {
             .ok_or(types::RuspErr::ReaderEofError)?;
 
         match c {
+            '\'' => {
+                self.input = &self.input[1..]; // skip '\''
+                Ok(types::RuspExp::Cons {
+                    car: Box::new(types::RuspExp::Atom(types::RuspAtom::Symbol(
+                        "quote".to_string(),
+                    ))),
+                    cdr: Box::new(types::RuspExp::Cons {
+                        car: Box::new(self.read()?),
+                        cdr: Box::new(types::nil!()),
+                    }),
+                })
+            }
             '(' => {
                 self.input = &self.input[1..]; // skip '('
                 self.read_cons()

@@ -23,9 +23,11 @@ fn repl() -> anyhow::Result<()> {
 
                 match res {
                     Ok(res) => println!("{}", res),
-                    Err(e) => match e.downcast_ref::<types::RuspErr>() {
-                        Some(types::RuspErr::ReplEmptyError) => (),
-                        _ => eprintln!("{}", e),
+                    Err(e) => {
+                        if let Some(types::RuspErr::ReplEmptyError) = e.downcast_ref() {
+                            break;
+                        };
+                        eprintln!("{:?}", e);
                     },
                 }
             }

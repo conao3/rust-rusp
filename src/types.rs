@@ -115,7 +115,14 @@ impl std::fmt::Display for RuspExp {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let str = match self {
             RuspExp::Atom(atom) => atom.to_string(),
-            RuspExp::Cons { car, cdr } => {
+            RuspExp::Cons { car, cdr } => || -> String {
+                if let RuspExp::Atom(RuspAtom::Symbol(s)) = &**car && s == "quote" {
+                    if let RuspExp::Cons { car, cdr } = &**cdr {
+                        if let RuspExp::Atom(RuspAtom::Symbol(s)) = &**cdr && s == "nil" {
+                            return format!("'{}", car);
+                        }
+                    }
+                }
                 let mut lst: Vec<String> = vec![];
                 let mut cell = cdr;
 
@@ -139,7 +146,7 @@ impl std::fmt::Display for RuspExp {
                     }
                 }
                 format!("({})", lst.join(" "))
-            }
+            }()
         };
         write!(f, "{}", str)
     }
@@ -211,6 +218,20 @@ impl RuspExp {
             lst.push(Err(anyhow::anyhow!(RuspErr::WrongTypeArgument)));
         }
         lst.into_iter()
+    }
+
+    pub fn car(&self) -> anyhow::Result<&RuspExp> {
+        match self {
+            RuspExp::Cons { car, .. } => Ok(car),
+            _ => Err(anyhow::anyhow!(RuspErr::WrongTypeArgument)),
+        }
+    }
+
+    pub fn cdr(&self) -> anyhow::Result<&RuspExp> {
+        match self {
+            RuspExp::Cons { cdr, .. } => Ok(cdr),
+            _ => Err(anyhow::anyhow!(RuspErr::WrongTypeArgument)),
+        }
     }
 }
 
