@@ -59,25 +59,12 @@ fn read(x: &str) -> anyhow::Result<types::RuspExp> {
 pub fn eval(x: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
     match x {
         types::RuspExp::Atom(atom) => match atom {
-            types::RuspAtom::Symbol(s) => env
-                .value
-                .get(&s)
-                .ok_or_else(|| {
-                    anyhow::anyhow!(types::RuspErr::VoidVariable {
-                        name: s.to_string().into()
-                    })
-                })
-                .map(|x| x.clone()),
+            types::RuspAtom::Symbol(s) => Ok(env.get_variable(&s)?.clone()),
             _ => Ok(types::RuspExp::Atom(atom)),
         },
         types::RuspExp::Cons { car, cdr } => match *car {
             types::RuspExp::Atom(types::RuspAtom::Symbol(s)) => {
-                let func = env.function.get(&s).ok_or_else(|| {
-                    anyhow::anyhow!(types::RuspErr::VoidFunction {
-                        name: s.to_string().into()
-                    })
-                })?;
-
+                let func = env.get_function(&s)?;
                 match *func {
                     types::RuspExp::Atom(types::RuspAtom::Func(f)) => f(*cdr, env),
                     _ => Err(anyhow::anyhow!(types::RuspErr::WrongTypeArgument {

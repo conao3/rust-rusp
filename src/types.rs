@@ -244,6 +244,24 @@ impl RuspExp {
     }
 }
 
+impl RuspEnv {
+    pub fn get_variable(&self, key: &str) -> anyhow::Result<&RuspExp> {
+        self.value.get(key).ok_or_else(|| {
+            anyhow::anyhow!(RuspErr::VoidVariable {
+                name: key.to_string().into()
+            })
+        })
+    }
+
+    pub fn get_function(&self, key: &str) -> anyhow::Result<&RuspExp> {
+        self.function.get(key).ok_or_else(|| {
+            anyhow::anyhow!(RuspErr::VoidFunction {
+                name: key.to_string().into()
+            })
+        })
+    }
+}
+
 macro_rules! extract_args {
     (@var $var: ident, $args: ident, $args_len: ident, $nil: ident) => {
         let $var = $args.pop_front().ok_or_else(|| anyhow::anyhow!(types::RuspErr::WrongNumberOfArguments {
