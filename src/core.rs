@@ -62,16 +62,21 @@ pub fn eval(x: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types
             types::RuspAtom::Symbol(s) => env
                 .value
                 .get(&s)
-                .ok_or_else(|| anyhow::anyhow!(types::RuspErr::VoidVariable))
+                .ok_or_else(|| {
+                    anyhow::anyhow!(types::RuspErr::VoidVariable {
+                        name: s.to_string().into()
+                    })
+                })
                 .map(|x| x.clone()),
             _ => Ok(types::RuspExp::Atom(atom)),
         },
         types::RuspExp::Cons { car, cdr } => match *car {
             types::RuspExp::Atom(types::RuspAtom::Symbol(s)) => {
-                let func = env
-                    .function
-                    .get(&s)
-                    .ok_or_else(|| anyhow::anyhow!(types::RuspErr::VoidFunction))?;
+                let func = env.function.get(&s).ok_or_else(|| {
+                    anyhow::anyhow!(types::RuspErr::VoidFunction {
+                        name: s.to_string().into()
+                    })
+                })?;
 
                 match *func {
                     types::RuspExp::Atom(types::RuspAtom::Func(f)) => f(*cdr, env),

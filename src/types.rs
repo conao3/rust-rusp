@@ -19,9 +19,13 @@ pub enum RuspErr {
         actual: usize,
     },
     #[error("VoidVariable")]
-    VoidVariable,
+    VoidVariable {
+        name: std::borrow::Cow<'static, str>,
+    },
     #[error("VoidFunction")]
-    VoidFunction,
+    VoidFunction {
+        name: std::borrow::Cow<'static, str>,
+    },
 }
 
 #[derive(Clone)]
