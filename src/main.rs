@@ -27,7 +27,7 @@ fn repl() -> anyhow::Result<()> {
                         if let Some(types::RuspErr::ReplEmptyError) = e.downcast_ref() {
                             break;
                         };
-                        eprintln!("{:?}", e);
+                        eprintln!("{:#?}", e);
                     },
                 }
             }
