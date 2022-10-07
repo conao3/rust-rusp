@@ -62,7 +62,7 @@ pub fn eval(x: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types
             types::RuspAtom::Symbol(s) => env
                 .value
                 .get(&s)
-                .ok_or_else(|| anyhow::anyhow!("Symbol not found: {}", s))
+                .ok_or_else(|| anyhow::anyhow!(types::RuspErr::VoidVariable))
                 .map(|x| x.clone()),
             _ => Ok(types::RuspExp::Atom(atom)),
         },
@@ -71,14 +71,14 @@ pub fn eval(x: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types
                 let func = env
                     .function
                     .get(&s)
-                    .ok_or_else(|| anyhow::anyhow!("Function not found: {}", s))?;
+                    .ok_or_else(|| anyhow::anyhow!(types::RuspErr::VoidFunction))?;
 
                 match *func {
                     types::RuspExp::Atom(types::RuspAtom::Func(f)) => f(*cdr, env),
-                    _ => Err(anyhow::anyhow!("Not a function: {}", s)),
+                    _ => Err(anyhow::anyhow!(types::RuspErr::WrongTypeArgument)),
                 }
             }
-            _ => Err(anyhow::anyhow!("Not a function")),
+            _ => Err(anyhow::anyhow!(types::RuspErr::WrongTypeArgument)),
         },
     }
 }
