@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.65"
+anyhow = {version = "1.0.65", features = ["backtrace"]}
 getopts = "0.2.21"
 regex = "1.6.0"
 rustyline = "10.0.0"
