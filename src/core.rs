@@ -69,13 +69,13 @@ pub fn eval(x: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types
                     types::RuspExp::Atom(types::RuspAtom::Func(f)) => f(*cdr, env),
                     _ => Err(anyhow::anyhow!(types::RuspErr::WrongTypeArgument {
                         expected: "function".into(),
-                        actual: format!("{:?}", func).into()
+                        actual: format!("{}", func).into()
                     })),
                 }
             }
             _ => Err(anyhow::anyhow!(types::RuspErr::WrongTypeArgument {
                 expected: "symbol".into(),
-                actual: format!("{:?}", car).into()
+                actual: format!("{}", car).into()
             })),
         },
     }
