@@ -31,7 +31,17 @@ macro_rules! basic_op {
 
         anyhow::ensure!(
             lst.iter().all(|x| x.numberp()),
-            types::RuspErr::WrongTypeArgument
+            types::RuspErr::WrongTypeArgument {
+                expected: "list<number>".into(),
+                actual: format!(
+                    "({})",
+                    lst.iter()
+                        .map(|x| x.to_string())
+                        .collect::<Vec<_>>()
+                        .join(" ")
+                )
+                .into()
+            }
         );
 
         if lst.len() == 0 {
@@ -84,7 +94,17 @@ macro_rules! basic_pred {
 
         anyhow::ensure!(
             lst.iter().all(|x| x.numberp()),
-            types::RuspErr::WrongTypeArgument
+            types::RuspErr::WrongTypeArgument {
+                expected: "list<number>".into(),
+                actual: format!(
+                    "({})",
+                    lst.iter()
+                        .map(|e| e.to_string())
+                        .collect::<Vec<_>>()
+                        .join(" ")
+                )
+                .into()
+            }
         );
 
         if lst.len() <= 1 {
@@ -196,17 +216,19 @@ defun!(if_, arg, env, (cond, then, &optional else_), {
     core::eval(*else_.clone(), env)
 });
 
-defun!(set, arg, env, (sym, val), {
-    match core::eval(*sym.clone(), env)? {
+defun!(set, arg, env, (sym_, val), {
+    let sym = core::eval(*sym_.clone(), env)?;
+    match sym {
         types::RuspExp::Atom(types::RuspAtom::Symbol(s)) => {
             let val = core::eval(*val.clone(), env)?;
             env.value.insert(s, val.clone());
             Ok(val)
-        },
-        _ => Err(anyhow::anyhow!(types::RuspErr::WrongTypeArgument)),
+        }
+        _ => Err(anyhow::anyhow!(types::RuspErr::WrongTypeArgument {
+            expected: "symbol".into(),
+            actual: sym.to_string().into()
+        })),
     }
 });
 
-defun!(quote, arg, _env, (exp), {
-    Ok(*exp.clone())
-});
+defun!(quote, arg, _env, (exp), { Ok(*exp.clone()) });

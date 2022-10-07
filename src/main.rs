@@ -28,7 +28,7 @@ fn repl() -> anyhow::Result<()> {
                             break;
                         };
                         eprintln!("{:#?}", e);
-                    },
+                    }
                 }
             }
             Err(rustyline::error::ReadlineError::Interrupted) => {

@@ -8,7 +8,10 @@ pub enum RuspErr {
     ReaderEofError,
 
     #[error("WrongTypeArgument")]
-    WrongTypeArgument,
+    WrongTypeArgument {
+        expected: std::borrow::Cow<'static, str>,
+        actual: std::borrow::Cow<'static, str>,
+    },
     #[error("WrongNumberOfArguments")]
     WrongNumberOfArguments {
         required: usize,
@@ -139,7 +142,7 @@ impl std::fmt::Display for RuspExp {
                 }
 
                 format!("({})", lst.join(" "))
-            }()
+            }(),
         };
         write!(f, "{}", str)
     }
@@ -208,7 +211,10 @@ impl RuspExp {
 
         if !cell.nilp() {
             // dotlist is not allowed
-            lst.push(Err(anyhow::anyhow!(RuspErr::WrongTypeArgument)));
+            lst.push(Err(anyhow::anyhow!(RuspErr::WrongTypeArgument {
+                expected: "list".into(),
+                actual: cell.to_string().into()
+            })));
         }
         lst.into_iter()
     }
@@ -216,14 +222,20 @@ impl RuspExp {
     pub fn car(&self) -> anyhow::Result<&RuspExp> {
         match self {
             RuspExp::Cons { car, .. } => Ok(car),
-            _ => Err(anyhow::anyhow!(RuspErr::WrongTypeArgument)),
+            _ => Err(anyhow::anyhow!(RuspErr::WrongTypeArgument {
+                expected: "cons".into(),
+                actual: self.to_string().into()
+            })),
         }
     }
 
     pub fn cdr(&self) -> anyhow::Result<&RuspExp> {
         match self {
             RuspExp::Cons { cdr, .. } => Ok(cdr),
-            _ => Err(anyhow::anyhow!(RuspErr::WrongTypeArgument)),
+            _ => Err(anyhow::anyhow!(RuspErr::WrongTypeArgument {
+                expected: "cons".into(),
+                actual: self.to_string().into()
+            })),
         }
     }
 }
@@ -274,7 +286,10 @@ impl<'a> Iterator for ListIter<'a> {
 
         if !self.0.nilp() {
             // dotlist is not allowed
-            return Some(Err(anyhow::anyhow!(RuspErr::WrongTypeArgument)));
+            return Some(Err(anyhow::anyhow!(RuspErr::WrongTypeArgument {
+                expected: "nil".into(),
+                actual: self.0.to_string().into()
+            })));
         }
 
         None
