@@ -17,6 +17,10 @@ pub enum RuspErr {
         allowed: Option<usize>,
         actual: usize,
     },
+    #[error("VoidVariable")]
+    VoidVariable,
+    #[error("VoidFunction")]
+    VoidFunction,
 }
 
 #[derive(Clone)]
@@ -227,6 +231,7 @@ macro_rules! extract_args {
     ($arg: ident, $env: ident, ($($(& $annotation: ident)? $var: ident),+), $body: block) => {{
         let mut args = $arg.into_iter().collect::<Result<std::collections::VecDeque<_>, _>>()?;
         let args_len = args.len();
+        #[allow(unused_variables)]
         let nil = Box::new(crate::types::nil!());
         $(
             crate::types::extract_args!(@var $(& $annotation)? $var, args, args_len, nil);

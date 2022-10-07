@@ -195,3 +195,18 @@ defun!(if_, arg, env, (cond, then, &optional else_), {
     }
     core::eval(*else_.clone(), env)
 });
+
+defun!(set, arg, env, (sym, val), {
+    match core::eval(*sym.clone(), env)? {
+        types::RuspExp::Atom(types::RuspAtom::Symbol(s)) => {
+            let val = core::eval(*val.clone(), env)?;
+            env.value.insert(s, val.clone());
+            Ok(val)
+        },
+        _ => Err(anyhow::anyhow!(types::RuspErr::WrongTypeArgument)),
+    }
+});
+
+defun!(quote, arg, _env, (exp), {
+    Ok(*exp.clone())
+});
