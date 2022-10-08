@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 anyhow = {version = "1.0.65", features = ["backtrace"]}
 getopts = "0.2.21"
+once_cell = "1.15.0"
 regex = "1.6.0"
 rustyline = "10.0.0"
 thiserror = "1.0.37"

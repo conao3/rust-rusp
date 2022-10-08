@@ -37,6 +37,7 @@ pub enum RuspAtom {
     Float(f64),
     String(String),
     Symbol(String),
+    Keyword(String),
     Func(fn(&RuspExp, &mut RuspEnv) -> anyhow::Result<RuspExp>),
     Lambda {
         params: Box<RuspExp>,
@@ -109,6 +110,7 @@ impl std::fmt::Debug for RuspAtom {
             RuspAtom::Float(i) => write!(f, "{}", i),
             RuspAtom::String(i) => write!(f, "{}", i),
             RuspAtom::Symbol(i) => write!(f, "{}", i),
+            RuspAtom::Keyword(i) => write!(f, ":{}", i),
             RuspAtom::Func(_) => write!(f, "#<function>"),
             RuspAtom::Lambda { params, body } => write!(f, "#<lambda {} {}>", params, body),
         }
@@ -122,6 +124,7 @@ impl std::fmt::Display for RuspAtom {
             RuspAtom::Float(i) => i.to_string(),
             RuspAtom::String(s) => s.to_string(),
             RuspAtom::Symbol(s) => s.to_string(),
+            RuspAtom::Keyword(s) => format!(":{}", s),
             RuspAtom::Func(_) => "#<function>".to_string(),
             RuspAtom::Lambda { params, body } => format!("#<lambda {} {}>", params, body),
         };

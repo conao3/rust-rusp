@@ -1,5 +1,12 @@
 use crate::types;
 
+static INT_PATTERN: once_cell::sync::Lazy<regex::Regex> =
+    once_cell::sync::Lazy::new(|| regex::Regex::new(r"^([+-]?[0-9]+)(?:[ ();]|$)").unwrap());
+static FLOAT_PATTERN: once_cell::sync::Lazy<regex::Regex> =
+    once_cell::sync::Lazy::new(|| regex::Regex::new(r"^([+-]?[0-9]*\.[0-9]+)(?:[ ();]|$)").unwrap());
+static SYMBOL_PATTERN: once_cell::sync::Lazy<regex::Regex> =
+    once_cell::sync::Lazy::new(|| regex::Regex::new(r"^[^ ();]+").unwrap());
+
 pub struct Reader<'a> {
     input: &'a str,
 }
@@ -16,11 +23,7 @@ impl Reader<'_> {
     fn read_atom(&mut self) -> anyhow::Result<types::RuspExp> {
         self.skip_whitespace();
 
-        let int_pattern = regex::Regex::new(r"^([+-]?[0-9]+)(?:[ ();]|$)").unwrap();
-        let float_pattern = regex::Regex::new(r"^([+-]?[0-9]*\.[0-9]+)(?:[ ();]|$)").unwrap();
-        let symbol_pattern = regex::Regex::new(r"^[^ ();]+").unwrap();
-
-        if let Some(m) = float_pattern.captures(self.input) {
+        if let Some(m) = FLOAT_PATTERN.captures(self.input) {
             let s = m.get(1).unwrap().as_str();
             let f = s.parse::<f64>().unwrap();
             self.input = &self.input[s.len()..];
@@ -28,7 +31,7 @@ impl Reader<'_> {
             return Ok(types::RuspExp::Atom(types::RuspAtom::Float(f)));
         }
 
-        if let Some(m) = int_pattern.captures(self.input) {
+        if let Some(m) = INT_PATTERN.captures(self.input) {
             let s = m.get(1).unwrap().as_str();
             let i = s.parse::<i64>().unwrap();
             self.input = &self.input[s.len()..];
@@ -36,7 +39,7 @@ impl Reader<'_> {
             return Ok(types::RuspExp::Atom(types::RuspAtom::Int(i)));
         }
 
-        if let Some(m) = symbol_pattern.captures(self.input) {
+        if let Some(m) = SYMBOL_PATTERN.captures(self.input) {
             let s = m.get(0).unwrap().as_str();
             self.input = &self.input[s.len()..];
             return Ok(types::RuspExp::Atom(types::RuspAtom::Symbol(s.to_string())));
@@ -108,6 +111,17 @@ impl Reader<'_> {
                         cdr: Box::new(types::nil!()),
                     }),
                 })
+            }
+            ':' => {
+                self.input = &self.input[1..]; // skip ':'
+
+                if let Some(m) = SYMBOL_PATTERN.captures(self.input) {
+                    let s = m.get(0).unwrap().as_str();
+                    self.input = &self.input[s.len()..];
+                    return Ok(types::RuspExp::Atom(types::RuspAtom::Keyword(s.to_string())))
+                }
+
+                Ok(types::RuspExp::Atom(types::RuspAtom::Keyword("".to_string())))
             }
             '(' => {
                 self.input = &self.input[1..]; // skip '('
