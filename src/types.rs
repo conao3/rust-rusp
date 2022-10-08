@@ -1,5 +1,8 @@
 #[derive(thiserror::Error, Debug, Eq, PartialEq)]
 pub enum RuspErr {
+    #[error("DummyError")]
+    DummyError,
+
     #[error("ReplEmptyError")]
     ReplEmptyError,
     #[error("ReaderError")]
@@ -35,6 +38,10 @@ pub enum RuspAtom {
     String(String),
     Symbol(String),
     Func(fn(RuspExp, &mut RuspEnv) -> anyhow::Result<RuspExp>),
+    Lambda {
+        params: Box<RuspExp>,
+        body: Box<RuspExp>,
+    },
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -46,10 +53,11 @@ pub enum RuspExp {
     },
 }
 
-#[derive(Debug, PartialEq, Default)]
+#[derive(Debug, PartialEq, Default, Clone)]
 pub struct RuspEnv {
-    pub value: std::collections::HashMap<String, RuspExp>,
+    pub variable: std::collections::HashMap<String, RuspExp>,
     pub function: std::collections::HashMap<String, RuspExp>,
+    pub outer: Option<Box<RuspEnv>>,
 }
 
 macro_rules! rusp_func {
@@ -99,6 +107,7 @@ impl std::fmt::Debug for RuspAtom {
             RuspAtom::String(i) => write!(f, "{}", i),
             RuspAtom::Symbol(i) => write!(f, "{}", i),
             RuspAtom::Func(_) => write!(f, "#<function>"),
+            RuspAtom::Lambda { params, body } => write!(f, "#<lambda {} {}>", params, body),
         }
     }
 }
@@ -111,6 +120,7 @@ impl std::fmt::Display for RuspAtom {
             RuspAtom::String(s) => s.to_string(),
             RuspAtom::Symbol(s) => s.to_string(),
             RuspAtom::Func(_) => "#<function>".to_string(),
+            RuspAtom::Lambda { params, body } => format!("#<lambda {} {}>", params, body),
         };
         write!(f, "{}", str)
     }
@@ -149,6 +159,25 @@ impl std::fmt::Display for RuspExp {
             }(),
         };
         write!(f, "{}", str)
+    }
+}
+
+impl std::fmt::Display for RuspEnv {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let mut var_lst: Vec<String> = vec![];
+        for (k, v) in &self.variable {
+            var_lst.push(format!("({} {})", k, v));
+        }
+        let mut func_lst: Vec<String> = vec![];
+        for (k, v) in &self.function {
+            func_lst.push(format!("({} {})", k, v));
+        }
+        write!(
+            f,
+            "(var ({}) fn ({}))",
+            var_lst.join(" "),
+            func_lst.join(" ")
+        )
     }
 }
 
@@ -246,19 +275,31 @@ impl RuspExp {
 
 impl RuspEnv {
     pub fn get_variable(&self, key: &str) -> anyhow::Result<&RuspExp> {
-        self.value.get(key).ok_or_else(|| {
-            anyhow::anyhow!(RuspErr::VoidVariable {
-                name: key.to_string().into()
-            })
-        })
+        if let Some(val) = self.variable.get(key) {
+            return Ok(val);
+        }
+
+        if let Some(env) = &self.outer {
+            return env.get_variable(key);
+        }
+
+        Err(anyhow::anyhow!(RuspErr::VoidVariable {
+            name: key.to_string().into()
+        }))
     }
 
     pub fn get_function(&self, key: &str) -> anyhow::Result<&RuspExp> {
-        self.function.get(key).ok_or_else(|| {
-            anyhow::anyhow!(RuspErr::VoidFunction {
-                name: key.to_string().into()
-            })
-        })
+        if let Some(val) = self.function.get(key) {
+            return Ok(val);
+        }
+
+        if let Some(env) = &self.outer {
+            return env.get_function(key);
+        }
+
+        Err(anyhow::anyhow!(RuspErr::VoidFunction {
+            name: key.to_string().into()
+        }))
     }
 }
 

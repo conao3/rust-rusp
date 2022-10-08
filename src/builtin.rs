@@ -1,5 +1,8 @@
+use anyhow::Context;
+
 use crate::core;
 use crate::types;
+use crate::util;
 
 macro_rules! defun {
     ($name: ident, $arg: ident, $env: ident, _, $body: block) => {
@@ -221,7 +224,7 @@ defun!(set, arg, env, (sym_, val), {
     match sym {
         types::RuspExp::Atom(types::RuspAtom::Symbol(s)) => {
             let val = core::eval(*val.clone(), env)?;
-            env.value.insert(s, val.clone());
+            env.variable.insert(s, val.clone());
             Ok(val)
         }
         _ => Err(anyhow::anyhow!(types::RuspErr::WrongTypeArgument {
@@ -232,3 +235,58 @@ defun!(set, arg, env, (sym_, val), {
 });
 
 defun!(quote, arg, _env, (exp), { Ok(*exp.clone()) });
+
+defun!(lambda, arg, _env, (params, body), {
+    Ok(types::RuspExp::Atom(types::RuspAtom::Lambda {
+        params: params.clone(),
+        body: body.clone(),
+    }))
+});
+
+defun!(apply, arg, env, (func_, args_), {
+    let func = core::eval(*func_.clone(), env)?;
+    let args = core::eval(*args_.clone(), env)?;
+    match func {
+        types::RuspExp::Atom(types::RuspAtom::Lambda { params, body }) => {
+            let symbols = params
+                .into_iter()
+                .map(|x_| {
+                    let x = x_?;
+                    match &**x {
+                        types::RuspExp::Atom(types::RuspAtom::Symbol(s)) => Ok(s),
+                        _ => Err(anyhow::anyhow!(types::RuspErr::WrongTypeArgument {
+                            expected: "symbol".into(),
+                            actual: x.to_string().into()
+                        })),
+                    }
+                })
+                .collect::<Result<Vec<_>, _>>()
+                .with_context(|| {
+                    anyhow::anyhow!(types::RuspErr::WrongTypeArgument {
+                        expected: "list<symbol>".into(),
+                        actual: params.to_string().into()
+                    })
+                })?;
+
+            let mut new_env = types::RuspEnv {
+                outer: Some(Box::new(env.clone())),
+                ..Default::default()
+            };
+
+            for elm in util::safe_zip_eq(symbols, args.into_iter()) {
+                let (sym, val_) = elm?;
+                let val = val_?;
+                new_env.variable.insert(
+                    sym.to_string(),
+                    core::eval((**val).clone(), &mut env.clone())?,
+                );
+            }
+
+            core::eval(*body, &mut new_env)
+        }
+        _ => Err(anyhow::anyhow!(types::RuspErr::WrongTypeArgument {
+            expected: "lambda".into(),
+            actual: func.to_string().into()
+        })),
+    }
+});

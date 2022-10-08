@@ -5,8 +5,8 @@ use crate::types;
 pub fn default_env() -> types::RuspEnv {
     let mut env = types::RuspEnv::default();
 
-    env.value.insert("nil".to_string(), types::nil!());
-    env.value.insert("t".to_string(), types::t!());
+    env.variable.insert("nil".to_string(), types::nil!());
+    env.variable.insert("t".to_string(), types::t!());
 
     types::rusp_func!(
         env,
@@ -23,6 +23,8 @@ pub fn default_env() -> types::RuspEnv {
         ("if", builtin::if_),
         ("set", builtin::set),
         ("quote", builtin::quote),
+        ("lambda", builtin::lambda),
+        ("apply", builtin::apply),
     )
     // ("def", builtin::def),
     // ("fn", builtin::fn_func),
@@ -62,22 +64,40 @@ pub fn eval(x: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types
             types::RuspAtom::Symbol(s) => Ok(env.get_variable(&s)?.clone()),
             _ => Ok(types::RuspExp::Atom(atom)),
         },
-        types::RuspExp::Cons { car, cdr } => match *car {
-            types::RuspExp::Atom(types::RuspAtom::Symbol(s)) => {
-                let func = env.get_function(&s)?;
-                match *func {
-                    types::RuspExp::Atom(types::RuspAtom::Func(f)) => f(*cdr, env),
+        types::RuspExp::Cons { ref car, ref cdr } => || -> anyhow::Result<types::RuspExp> {
+            if let types::RuspExp::Atom(types::RuspAtom::Symbol(s)) = &**car {
+                let func = env.get_function(s)?;
+                return match *func {
+                    types::RuspExp::Atom(types::RuspAtom::Func(f)) => f(*cdr.clone(), env),
                     _ => Err(anyhow::anyhow!(types::RuspErr::WrongTypeArgument {
                         expected: "function".into(),
                         actual: format!("{}", func).into()
                     })),
-                }
+                };
             }
-            _ => Err(anyhow::anyhow!(types::RuspErr::WrongTypeArgument {
+
+            if let types::RuspExp::Cons{car: ref car_car, cdr: ref car_cdr} = &**car &&
+                let types::RuspExp::Atom(types::RuspAtom::Symbol(s)) = &**car_car &&
+                s == "lambda" {
+                return eval(
+                    types::RuspExp::Cons {
+                        car: Box::new(types::RuspExp::Atom(types::RuspAtom::Symbol("apply".to_string()))),
+                        cdr: Box::new(types::RuspExp::Cons{
+                            car: Box::new(*car.clone()),
+                            cdr: Box::new(types::RuspExp::Cons{
+                                car: Box::new(types::RuspExp::Atom(types::RuspAtom::Symbol("quote".to_string()))),
+                                cdr: Box::new(*car_cdr.clone()),
+                            })
+                        }),
+                    }, env
+                );
+            }
+
+            Err(anyhow::anyhow!(types::RuspErr::WrongTypeArgument {
                 expected: "symbol".into(),
                 actual: format!("{}", car).into()
-            })),
-        },
+            }))
+        }(),
     }
 }
 
