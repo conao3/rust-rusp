@@ -1,6 +1,9 @@
+use anyhow::Context;
+
 use crate::builtin;
 use crate::reader;
 use crate::types;
+use crate::util;
 
 pub fn default_env<'a>() -> types::RuspEnv<'a> {
     let mut env = types::RuspEnv::default();
@@ -58,6 +61,52 @@ fn read(x: &str) -> anyhow::Result<types::RuspExp> {
     reader.read()
 }
 
+pub fn eval_lambda(func: &types::RuspExp, args: &types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
+    match func {
+        types::RuspExp::Atom(types::RuspAtom::Lambda { params, body }) => {
+            let symbols = params
+                .into_iter()
+                .map(|x_| {
+                    let x = x_?;
+                    match &**x {
+                        types::RuspExp::Atom(types::RuspAtom::Symbol(s)) => Ok(s),
+                        _ => Err(anyhow::anyhow!(types::RuspErr::WrongTypeArgument {
+                            expected: "symbol".into(),
+                            actual: x.to_string().into()
+                        })),
+                    }
+                })
+                .collect::<Result<Vec<_>, _>>()
+                .with_context(|| {
+                    anyhow::anyhow!(types::RuspErr::WrongTypeArgument {
+                        expected: "list<symbol>".into(),
+                        actual: params.to_string().into()
+                    })
+                })?;
+
+            let mut new_env = types::RuspEnv {
+                outer: Some(env),
+                ..Default::default()
+            };
+
+            for elm in util::safe_zip_eq(symbols, args.into_iter()) {
+                let (sym, val_) = elm?;
+                let val = val_?;
+                new_env.variable.insert(
+                    sym.to_string(),
+                    eval(val, &mut env.clone())?,
+                );
+            }
+
+            eval(body, &mut new_env)
+        }
+        _ => Err(anyhow::anyhow!(types::RuspErr::WrongTypeArgument {
+            expected: "lambda".into(),
+            actual: func.to_string().into()
+        })),
+    }
+}
+
 pub fn eval(x: &types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
     match x {
         types::RuspExp::Atom(atom) => match atom {
@@ -79,24 +128,7 @@ pub fn eval(x: &types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<type
             if let types::RuspExp::Cons{car: ref car_car, cdr: _} = &**car &&
                 let types::RuspExp::Atom(types::RuspAtom::Symbol(s)) = &**car_car &&
                 s == "lambda" {
-                return eval(
-                    &types::RuspExp::Cons {
-                        car: Box::new(types::RuspExp::Atom(types::RuspAtom::Symbol("apply".to_string()))),
-                        cdr: Box::new(types::RuspExp::Cons{
-                            car: Box::new(*car.clone()),
-                            cdr: Box::new(types::RuspExp::Cons{
-                                car: Box::new(types::RuspExp::Cons{
-                                    car: Box::new(types::RuspExp::Atom(types::RuspAtom::Symbol("quote".to_string()))),
-                                    cdr: Box::new(types::RuspExp::Cons {
-                                        car: Box::new(*cdr.clone()),
-                                        cdr: Box::new(types::nil!())
-                                    }),
-                                }),
-                                cdr: Box::new(types::nil!()),
-                            })
-                        }),
-                    }, env
-                );
+                return eval_lambda(&eval(car, env)?, cdr, env);
             }
 
             Err(anyhow::anyhow!(types::RuspErr::WrongTypeArgument {
