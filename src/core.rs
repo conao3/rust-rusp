@@ -25,6 +25,7 @@ pub fn default_env<'a>() -> types::RuspEnv<'a> {
         ("!=", builtin::arith_neq),
         ("if", builtin::if_),
         ("set", builtin::set),
+        ("setq", builtin::setq),
         ("quote", builtin::quote),
         ("lambda", builtin::lambda),
         ("apply", builtin::apply),

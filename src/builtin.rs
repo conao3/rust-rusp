@@ -231,6 +231,20 @@ defun!(set, arg, env, (sym_, val), {
     }
 });
 
+defun!(setq, arg, env, (sym, val), {
+    match &**sym {
+        types::RuspExp::Atom(types::RuspAtom::Symbol(s)) => {
+            let val = core::eval(val, env)?;
+            env.variable.insert(s.to_string(), val.clone());
+            Ok(val)
+        }
+        _ => Err(anyhow::anyhow!(types::RuspErr::WrongTypeArgument {
+            expected: "symbol".into(),
+            actual: sym.to_string().into()
+        })),
+    }
+});
+
 defun!(quote, arg, _env, (exp), { Ok(*exp.clone()) });
 
 defun!(lambda, arg, _env, (params, body), {
