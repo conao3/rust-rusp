@@ -9,6 +9,10 @@ pub enum RuspErr {
     ReaderError,
     #[error("ReaderEofError")]
     ReaderEofError,
+    #[error("ReaderInvalidEscapeError")]
+    ReaderInvalidEscapeError { char: char },
+    #[error("ReaderUnclosedStringError")]
+    ReaderUnclosedStringError,
 
     #[error("WrongTypeArgument")]
     WrongTypeArgument {
@@ -105,15 +109,7 @@ impl PartialEq for RuspAtom {
 
 impl std::fmt::Debug for RuspAtom {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            RuspAtom::Int(i) => write!(f, "{}", i),
-            RuspAtom::Float(i) => write!(f, "{}", i),
-            RuspAtom::String(i) => write!(f, "{}", i),
-            RuspAtom::Symbol(i) => write!(f, "{}", i),
-            RuspAtom::Keyword(i) => write!(f, ":{}", i),
-            RuspAtom::Func(_) => write!(f, "#<function>"),
-            RuspAtom::Lambda { params, body } => write!(f, "#<lambda {} {}>", params, body),
-        }
+        self.to_string().fmt(f)
     }
 }
 
@@ -122,9 +118,9 @@ impl std::fmt::Display for RuspAtom {
         let str = match self {
             RuspAtom::Int(i) => i.to_string(),
             RuspAtom::Float(i) => i.to_string(),
-            RuspAtom::String(s) => s.to_string(),
+            RuspAtom::String(s) => format!("\"{}\"", s),
             RuspAtom::Symbol(s) => s.to_string(),
-            RuspAtom::Keyword(s) => format!(":{}", s),
+            RuspAtom::Keyword(s) => s.to_string(),
             RuspAtom::Func(_) => "#<function>".to_string(),
             RuspAtom::Lambda { params, body } => format!("#<lambda {} {}>", params, body),
         };

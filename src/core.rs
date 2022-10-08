@@ -62,7 +62,11 @@ fn read(x: &str) -> anyhow::Result<types::RuspExp> {
     reader.read()
 }
 
-pub fn eval_lambda(func: &types::RuspExp, args: &types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
+pub fn eval_lambda(
+    func: &types::RuspExp,
+    args: &types::RuspExp,
+    env: &mut types::RuspEnv,
+) -> anyhow::Result<types::RuspExp> {
     match func {
         types::RuspExp::Atom(types::RuspAtom::Lambda { params, body }) => {
             let symbols = params
@@ -93,10 +97,9 @@ pub fn eval_lambda(func: &types::RuspExp, args: &types::RuspExp, env: &mut types
             for elm in util::safe_zip_eq(symbols, args.into_iter()) {
                 let (sym, val_) = elm?;
                 let val = val_?;
-                new_env.variable.insert(
-                    sym.to_string(),
-                    eval(val, &mut env.clone())?,
-                );
+                new_env
+                    .variable
+                    .insert(sym.to_string(), eval(val, &mut env.clone())?);
             }
 
             eval(body, &mut new_env)

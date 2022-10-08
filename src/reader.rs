@@ -2,8 +2,9 @@ use crate::types;
 
 static INT_PATTERN: once_cell::sync::Lazy<regex::Regex> =
     once_cell::sync::Lazy::new(|| regex::Regex::new(r"^([+-]?[0-9]+)(?:[ ();]|$)").unwrap());
-static FLOAT_PATTERN: once_cell::sync::Lazy<regex::Regex> =
-    once_cell::sync::Lazy::new(|| regex::Regex::new(r"^([+-]?[0-9]*\.[0-9]+)(?:[ ();]|$)").unwrap());
+static FLOAT_PATTERN: once_cell::sync::Lazy<regex::Regex> = once_cell::sync::Lazy::new(|| {
+    regex::Regex::new(r"^([+-]?[0-9]*\.[0-9]+)(?:[ ();]|$)").unwrap()
+});
 static SYMBOL_PATTERN: once_cell::sync::Lazy<regex::Regex> =
     once_cell::sync::Lazy::new(|| regex::Regex::new(r"^[^ ();]+").unwrap());
 
@@ -18,6 +19,37 @@ impl Reader<'_> {
 
     fn skip_whitespace(&mut self) {
         self.input = self.input.trim_start();
+    }
+
+    fn read_string(&mut self) -> anyhow::Result<types::RuspExp> {
+        let mut result = String::new();
+        let mut chars = self.input.chars();
+
+        chars.next(); // skip first "
+        loop {
+            let c = chars.next();
+            match c {
+                Some('"') => {
+                    break;
+                }
+                Some('\\') => match chars.next() {
+                    Some('\"') => result.push('"'),
+                    Some('\\') => result.push('\\'),
+                    Some(s) => {
+                        return Err(anyhow::anyhow!(types::RuspErr::ReaderInvalidEscapeError {
+                            char: s
+                        }))
+                    }
+                    None => return Err(anyhow::anyhow!(types::RuspErr::ReaderUnclosedStringError)),
+                },
+                Some(c) => {
+                    result.push(c);
+                }
+                None => anyhow::bail!(types::RuspErr::ReaderUnclosedStringError),
+            }
+        }
+        self.input = chars.as_str();
+        Ok(types::RuspExp::Atom(types::RuspAtom::String(result)))
     }
 
     fn read_atom(&mut self) -> anyhow::Result<types::RuspExp> {
@@ -118,11 +150,16 @@ impl Reader<'_> {
                 if let Some(m) = SYMBOL_PATTERN.captures(self.input) {
                     let s = m.get(0).unwrap().as_str();
                     self.input = &self.input[s.len()..];
-                    return Ok(types::RuspExp::Atom(types::RuspAtom::Keyword(s.to_string())))
+                    return Ok(types::RuspExp::Atom(types::RuspAtom::Keyword(
+                        s.to_string(),
+                    )));
                 }
 
-                Ok(types::RuspExp::Atom(types::RuspAtom::Keyword("".to_string())))
+                Ok(types::RuspExp::Atom(types::RuspAtom::Keyword(
+                    "".to_string(),
+                )))
             }
+            '\"' => self.read_string(),
             '(' => {
                 self.input = &self.input[1..]; // skip '('
                 self.read_cons()
