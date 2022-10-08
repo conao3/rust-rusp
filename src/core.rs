@@ -2,7 +2,7 @@ use crate::builtin;
 use crate::reader;
 use crate::types;
 
-pub fn default_env() -> types::RuspEnv {
+pub fn default_env<'a>() -> types::RuspEnv<'a> {
     let mut env = types::RuspEnv::default();
 
     env.variable.insert("nil".to_string(), types::nil!());
@@ -58,17 +58,17 @@ fn read(x: &str) -> anyhow::Result<types::RuspExp> {
     reader.read()
 }
 
-pub fn eval(x: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
+pub fn eval(x: &types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types::RuspExp> {
     match x {
         types::RuspExp::Atom(atom) => match atom {
-            types::RuspAtom::Symbol(s) => Ok(env.get_variable(&s)?.clone()),
-            _ => Ok(types::RuspExp::Atom(atom)),
+            types::RuspAtom::Symbol(s) => Ok(env.get_variable(s)?.clone()),
+            _ => Ok(x.clone()),
         },
         types::RuspExp::Cons { ref car, ref cdr } => || -> anyhow::Result<types::RuspExp> {
             if let types::RuspExp::Atom(types::RuspAtom::Symbol(s)) = &**car {
                 let func = env.get_function(s)?;
                 return match *func {
-                    types::RuspExp::Atom(types::RuspAtom::Func(f)) => f(*cdr.clone(), env),
+                    types::RuspExp::Atom(types::RuspAtom::Func(f)) => f(cdr, env),
                     _ => Err(anyhow::anyhow!(types::RuspErr::WrongTypeArgument {
                         expected: "function".into(),
                         actual: format!("{}", func).into()
@@ -76,17 +76,23 @@ pub fn eval(x: types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<types
                 };
             }
 
-            if let types::RuspExp::Cons{car: ref car_car, cdr: ref car_cdr} = &**car &&
+            if let types::RuspExp::Cons{car: ref car_car, cdr: _} = &**car &&
                 let types::RuspExp::Atom(types::RuspAtom::Symbol(s)) = &**car_car &&
                 s == "lambda" {
                 return eval(
-                    types::RuspExp::Cons {
+                    &types::RuspExp::Cons {
                         car: Box::new(types::RuspExp::Atom(types::RuspAtom::Symbol("apply".to_string()))),
                         cdr: Box::new(types::RuspExp::Cons{
                             car: Box::new(*car.clone()),
                             cdr: Box::new(types::RuspExp::Cons{
-                                car: Box::new(types::RuspExp::Atom(types::RuspAtom::Symbol("quote".to_string()))),
-                                cdr: Box::new(*car_cdr.clone()),
+                                car: Box::new(types::RuspExp::Cons{
+                                    car: Box::new(types::RuspExp::Atom(types::RuspAtom::Symbol("quote".to_string()))),
+                                    cdr: Box::new(types::RuspExp::Cons {
+                                        car: Box::new(*cdr.clone()),
+                                        cdr: Box::new(types::nil!())
+                                    }),
+                                }),
+                                cdr: Box::new(types::nil!()),
                             })
                         }),
                     }, env
@@ -109,5 +115,5 @@ pub fn rep(mut x: &str, env: &mut types::RuspEnv) -> anyhow::Result<String> {
     x = x.trim_start(); // simple skip whitespace
     anyhow::ensure!(!x.is_empty(), types::RuspErr::ReplEmptyError);
 
-    print(eval(read(x)?, env)?)
+    print(eval(&read(x)?, env)?)
 }

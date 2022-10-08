@@ -7,7 +7,7 @@ use crate::util;
 macro_rules! defun {
     ($name: ident, $arg: ident, $env: ident, _, $body: block) => {
         pub fn $name(
-            $arg: types::RuspExp,
+            $arg: &types::RuspExp,
             $env: &mut types::RuspEnv,
         ) -> anyhow::Result<types::RuspExp> {
             types::extract_args!($arg, $env, _, $body)
@@ -15,7 +15,7 @@ macro_rules! defun {
     };
     ($name: ident, $arg: ident, $env: ident, $arglist: tt, $body: block) => {
         pub fn $name(
-            $arg: types::RuspExp,
+            $arg: &types::RuspExp,
             $env: &mut types::RuspEnv,
         ) -> anyhow::Result<types::RuspExp> {
             types::extract_args!($arg, $env, $arglist, $body)
@@ -29,7 +29,7 @@ macro_rules! basic_op {
 
         let lst = arg_lst
             .iter()
-            .map(|x| core::eval((***x).clone(), $env))
+            .map(|x| core::eval(x, $env))
             .collect::<Result<Vec<_>, _>>()?;
 
         anyhow::ensure!(
@@ -92,7 +92,7 @@ macro_rules! basic_pred {
 
         let lst = arg_lst
             .iter()
-            .map(|x| core::eval((***x).clone(), $env))
+            .map(|x| core::eval(x, $env))
             .collect::<Result<Vec<_>, _>>()?;
 
         anyhow::ensure!(
@@ -213,17 +213,17 @@ defun!(arith_gte, arg, env, _, {
 });
 
 defun!(if_, arg, env, (cond, then, &optional else_), {
-    if core::eval(*cond.clone(), env)?.non_nil_p() {
-        return core::eval(*then.clone(), env)
+    if core::eval(cond, env)?.non_nil_p() {
+        return core::eval(then, env)
     }
-    core::eval(*else_.clone(), env)
+    core::eval(else_, env)
 });
 
 defun!(set, arg, env, (sym_, val), {
-    let sym = core::eval(*sym_.clone(), env)?;
+    let sym = core::eval(sym_, env)?;
     match sym {
         types::RuspExp::Atom(types::RuspAtom::Symbol(s)) => {
-            let val = core::eval(*val.clone(), env)?;
+            let val = core::eval(val, env)?;
             env.variable.insert(s, val.clone());
             Ok(val)
         }
@@ -244,8 +244,8 @@ defun!(lambda, arg, _env, (params, body), {
 });
 
 defun!(apply, arg, env, (func_, args_), {
-    let func = core::eval(*func_.clone(), env)?;
-    let args = core::eval(*args_.clone(), env)?;
+    let func = core::eval(func_, env)?;
+    let args = core::eval(args_, env)?;
     match func {
         types::RuspExp::Atom(types::RuspAtom::Lambda { params, body }) => {
             let symbols = params
@@ -269,7 +269,7 @@ defun!(apply, arg, env, (func_, args_), {
                 })?;
 
             let mut new_env = types::RuspEnv {
-                outer: Some(Box::new(env.clone())),
+                outer: Some(env),
                 ..Default::default()
             };
 
@@ -278,11 +278,11 @@ defun!(apply, arg, env, (func_, args_), {
                 let val = val_?;
                 new_env.variable.insert(
                     sym.to_string(),
-                    core::eval((**val).clone(), &mut env.clone())?,
+                    core::eval(val, &mut env.clone())?,
                 );
             }
 
-            core::eval(*body, &mut new_env)
+            core::eval(&body, &mut new_env)
         }
         _ => Err(anyhow::anyhow!(types::RuspErr::WrongTypeArgument {
             expected: "lambda".into(),

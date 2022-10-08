@@ -37,7 +37,7 @@ pub enum RuspAtom {
     Float(f64),
     String(String),
     Symbol(String),
-    Func(fn(RuspExp, &mut RuspEnv) -> anyhow::Result<RuspExp>),
+    Func(fn(&RuspExp, &mut RuspEnv) -> anyhow::Result<RuspExp>),
     Lambda {
         params: Box<RuspExp>,
         body: Box<RuspExp>,
@@ -54,17 +54,20 @@ pub enum RuspExp {
 }
 
 #[derive(Debug, PartialEq, Default, Clone)]
-pub struct RuspEnv {
+pub struct RuspEnv<'a> {
     pub variable: std::collections::HashMap<String, RuspExp>,
     pub function: std::collections::HashMap<String, RuspExp>,
-    pub outer: Option<Box<RuspEnv>>,
+    pub outer: Option<&'a RuspEnv<'a>>,
 }
 
 macro_rules! rusp_func {
     ($env: ident, $(($key:expr, $value:path)),*,) => {
         {
             $(
-                $env.function.insert($key.to_string(), crate::types::RuspExp::Atom(crate::types::RuspAtom::Func($value)));
+                $env.function.insert(
+                    $key.to_string(),
+                    crate::types::RuspExp::Atom(crate::types::RuspAtom::Func($value)),
+                );
             )*
             $env
         }
@@ -162,7 +165,7 @@ impl std::fmt::Display for RuspExp {
     }
 }
 
-impl std::fmt::Display for RuspEnv {
+impl std::fmt::Display for RuspEnv<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let mut var_lst: Vec<String> = vec![];
         for (k, v) in &self.variable {
@@ -273,7 +276,7 @@ impl RuspExp {
     }
 }
 
-impl RuspEnv {
+impl RuspEnv<'_> {
     pub fn get_variable(&self, key: &str) -> anyhow::Result<&RuspExp> {
         if let Some(val) = self.variable.get(key) {
             return Ok(val);
