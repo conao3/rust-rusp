@@ -97,13 +97,25 @@ pub(crate) use t;
 
 impl PartialEq for RuspAtom {
     fn eq(&self, other: &RuspAtom) -> bool {
-        if let RuspAtom::Func(_) = self {
-            return false;
+        match (self, other) {
+            (RuspAtom::Int(a), RuspAtom::Int(b)) => a == b,
+            (RuspAtom::Float(a), RuspAtom::Float(b)) => a == b,
+            (RuspAtom::String(a), RuspAtom::String(b))
+            | (RuspAtom::Symbol(a), RuspAtom::Symbol(b))
+            | (RuspAtom::Keyword(a), RuspAtom::Keyword(b)) => a == b,
+            (
+                RuspAtom::Lambda {
+                    params: a_params,
+                    body: a_body,
+                },
+                RuspAtom::Lambda {
+                    params: b_params,
+                    body: b_body,
+                },
+            ) => a_params == b_params && a_body == b_body,
+            (RuspAtom::Func(_), RuspAtom::Func(_)) => false,
+            _ => false,
         }
-        if let RuspAtom::Func(_) = other {
-            return false;
-        }
-        self == other
     }
 }
 
@@ -133,10 +145,12 @@ impl std::fmt::Display for RuspExp {
         let str = match self {
             RuspExp::Atom(atom) => atom.to_string(),
             RuspExp::Cons { car, cdr } => || -> String {
-                if let RuspExp::Atom(RuspAtom::Symbol(s)) = &**car && s == "quote" {
-                    if let RuspExp::Cons { car, cdr } = &**cdr {
-                        if cdr.nilp() {
-                            return format!("'{}", car);
+                if let RuspExp::Atom(RuspAtom::Symbol(s)) = &**car {
+                    if s == "quote" {
+                        if let RuspExp::Cons { car, cdr } = &**cdr {
+                            if cdr.nilp() {
+                                return format!("'{}", car);
+                            }
                         }
                     }
                 }

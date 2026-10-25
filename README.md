@@ -64,7 +64,7 @@ rusp> (if (< 1 2) "yes" "no")
 
 ## Requirements
 
-- Rust (nightly channel required for `is_some_with` feature)
+- Rust (stable channel)
 
 ## License
 
