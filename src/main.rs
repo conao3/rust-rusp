@@ -3,9 +3,8 @@ use rusp::core;
 use rusp::types;
 
 fn repl() -> anyhow::Result<()> {
-    let mut rl = rustyline::Editor::<()>::new()?;
-    let xdg_dirs =
-        xdg::BaseDirectories::with_prefix("rusp").context("Failed to get XDG directories")?;
+    let mut rl = rustyline::DefaultEditor::new()?;
+    let xdg_dirs = xdg::BaseDirectories::with_prefix("rusp");
     let history_file = xdg_dirs
         .place_config_file("history.txt")
         .context("Failed to get history file path")?;
@@ -18,7 +17,7 @@ fn repl() -> anyhow::Result<()> {
         let line = rl.readline("rusp> ");
         match line {
             Ok(line) => {
-                rl.add_history_entry(line.as_str());
+                rl.add_history_entry(line.as_str())?;
                 let res = core::rep(&line, &mut env);
 
                 match res {

@@ -129,10 +129,15 @@ pub fn eval(x: &types::RuspExp, env: &mut types::RuspEnv) -> anyhow::Result<type
                 };
             }
 
-            if let types::RuspExp::Cons{car: ref car_car, cdr: _} = &**car &&
-                let types::RuspExp::Atom(types::RuspAtom::Symbol(s)) = &**car_car &&
-                s == "lambda" {
-                return eval_lambda(&eval(car, env)?, cdr, env);
+            if let types::RuspExp::Cons {
+                car: ref car_car, ..
+            } = &**car
+            {
+                if let types::RuspExp::Atom(types::RuspAtom::Symbol(s)) = &**car_car {
+                    if s == "lambda" {
+                        return eval_lambda(&eval(car, env)?, cdr, env);
+                    }
+                }
             }
 
             Err(anyhow::anyhow!(types::RuspErr::WrongTypeArgument {
